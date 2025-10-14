@@ -288,6 +288,185 @@ export type Database = {
           created_at?: string;
         };
       };
+      tags: {
+        Row: {
+          id: string;
+          tag_name: string;
+          slug: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tag_name: string;
+          slug: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          tag_name?: string;
+          slug?: string;
+          created_at?: string;
+        };
+      };
+      events: {
+        Row: {
+          id: string;
+          title: string;
+          slug: string;
+          description: string;
+          event_date: string;
+          status: 'draft' | 'published';
+          is_featured: boolean;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          slug: string;
+          description: string;
+          event_date: string;
+          status?: 'draft' | 'published';
+          is_featured?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          slug?: string;
+          description?: string;
+          event_date?: string;
+          status?: 'draft' | 'published';
+          is_featured?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      event_images: {
+        Row: {
+          id: string;
+          event_id: string;
+          image_url_small: string;
+          image_url_medium: string;
+          image_url_large: string;
+          alt_text: string | null;
+          display_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          image_url_small: string;
+          image_url_medium: string;
+          image_url_large: string;
+          alt_text?: string | null;
+          display_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          image_url_small?: string;
+          image_url_medium?: string;
+          image_url_large?: string;
+          alt_text?: string | null;
+          display_order?: number;
+          created_at?: string;
+        };
+      };
+      event_videos: {
+        Row: {
+          id: string;
+          event_id: string;
+          youtube_url: string;
+          youtube_video_id: string;
+          display_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          youtube_url: string;
+          youtube_video_id: string;
+          display_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          youtube_url?: string;
+          youtube_video_id?: string;
+          display_order?: number;
+          created_at?: string;
+        };
+      };
+      event_tags: {
+        Row: {
+          event_id: string;
+          tag_id: string;
+        };
+        Insert: {
+          event_id: string;
+          tag_id: string;
+        };
+        Update: {
+          event_id?: string;
+          tag_id?: string;
+        };
+      };
+      event_error_logs: {
+        Row: {
+          id: string;
+          error_type: string;
+          error_message: string;
+          context_data: any;
+          stack_trace: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          error_type: string;
+          error_message: string;
+          context_data?: any;
+          stack_trace?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          error_type?: string;
+          error_message?: string;
+          context_data?: any;
+          stack_trace?: string | null;
+          created_at?: string;
+        };
+      };
+      site_settings: {
+        Row: {
+          id: string;
+          events_enabled: boolean;
+          events_public_access: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          events_enabled?: boolean;
+          events_public_access?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          events_enabled?: boolean;
+          events_public_access?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
   };
 };

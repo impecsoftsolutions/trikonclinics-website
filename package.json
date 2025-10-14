@@ -10,7 +10,10 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "db:test": "node test-connection.js",
-    "db:verify-update": "node verify-update-theme-function.js"
+    "db:verify-update": "node verify-update-theme-function.js",
+    "events:seed": "node seed-events-data.js",
+    "events:test": "node test-events-performance.js",
+    "events:verify": "node verify-events-setup.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
