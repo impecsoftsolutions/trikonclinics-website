@@ -13,7 +13,11 @@
     "db:verify-update": "node verify-update-theme-function.js",
     "events:seed": "node seed-events-data.js",
     "events:test": "node test-events-performance.js",
-    "events:verify": "node verify-events-setup.js"
+    "events:verify": "node verify-events-setup.js",
+    "phase1:migration": "node apply-phase1-migration.js",
+    "phase1:security": "node test-phase1-security.js",
+    "phase1:performance": "node test-phase1-performance.js",
+    "phase1:verify": "node verify-phase1-migration.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
@@ -22,7 +26,8 @@
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.9.3"
+    "react-router-dom": "^7.9.3",
+    "sharp": "^0.34.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
