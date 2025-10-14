@@ -313,11 +313,16 @@ export type Database = {
           id: string;
           title: string;
           slug: string;
-          description: string;
+          short_description: string;
+          full_description: string;
           event_date: string;
+          event_time: string | null;
+          venue: string | null;
+          highlights: string[] | null;
           status: 'draft' | 'published';
           is_featured: boolean;
           created_by: string | null;
+          updated_by: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -325,11 +330,16 @@ export type Database = {
           id?: string;
           title: string;
           slug: string;
-          description: string;
+          short_description: string;
+          full_description: string;
           event_date: string;
+          event_time?: string | null;
+          venue?: string | null;
+          highlights?: string[] | null;
           status?: 'draft' | 'published';
           is_featured?: boolean;
           created_by?: string | null;
+          updated_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -337,11 +347,16 @@ export type Database = {
           id?: string;
           title?: string;
           slug?: string;
-          description?: string;
+          short_description?: string;
+          full_description?: string;
           event_date?: string;
+          event_time?: string | null;
+          venue?: string | null;
+          highlights?: string[] | null;
           status?: 'draft' | 'published';
           is_featured?: boolean;
           created_by?: string | null;
+          updated_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -465,6 +480,29 @@ export type Database = {
           events_public_access?: boolean;
           created_at?: string;
           updated_at?: string;
+        };
+      };
+      url_redirects: {
+        Row: {
+          id: string;
+          old_slug: string;
+          new_slug: string;
+          event_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          old_slug: string;
+          new_slug: string;
+          event_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          old_slug?: string;
+          new_slug?: string;
+          event_id?: string;
+          created_at?: string;
         };
       };
     };

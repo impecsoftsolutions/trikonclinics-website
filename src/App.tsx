@@ -23,7 +23,7 @@ import ManageCategories from './pages/ManageCategories';
 import { ModernThemeSettings } from './pages/ModernThemeSettings';
 import { EventsDashboard } from './pages/admin/events/EventsDashboard';
 import { EventsList } from './pages/admin/events/EventsList';
-import { EventFormPlaceholder } from './pages/admin/events/EventFormPlaceholder';
+import { EventForm } from './pages/admin/events/EventForm';
 import { AdminLayout } from './layouts/AdminLayout';
 import { PublicLayout } from './layouts/PublicLayout';
 
@@ -58,8 +58,8 @@ function App() {
               <Route path="health-library/categories" element={<ManageCategories />} />
               <Route path="events/dashboard" element={<EventsDashboard />} />
               <Route path="events/list" element={<EventsList />} />
-              <Route path="events/add" element={<EventFormPlaceholder />} />
-              <Route path="events/edit/:id" element={<EventFormPlaceholder />} />
+              <Route path="events/add" element={<EventForm />} />
+              <Route path="events/edit/:id" element={<EventForm />} />
               <Route path="activity-logs" element={<ActivityLogs />} />
               <Route path="users" element={<UserManagement />} />
             </Route>
