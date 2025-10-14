@@ -21,6 +21,9 @@ import { UserManagement } from './pages/UserManagement';
 import ManageIllnesses from './pages/ManageIllnesses';
 import ManageCategories from './pages/ManageCategories';
 import { ModernThemeSettings } from './pages/ModernThemeSettings';
+import { EventsDashboard } from './pages/admin/events/EventsDashboard';
+import { EventsList } from './pages/admin/events/EventsList';
+import { EventFormPlaceholder } from './pages/admin/events/EventFormPlaceholder';
 import { AdminLayout } from './layouts/AdminLayout';
 import { PublicLayout } from './layouts/PublicLayout';
 
@@ -53,6 +56,10 @@ function App() {
               <Route path="social-media" element={<SocialMedia />} />
               <Route path="health-library/illnesses" element={<ManageIllnesses />} />
               <Route path="health-library/categories" element={<ManageCategories />} />
+              <Route path="events/dashboard" element={<EventsDashboard />} />
+              <Route path="events/list" element={<EventsList />} />
+              <Route path="events/add" element={<EventFormPlaceholder />} />
+              <Route path="events/edit/:id" element={<EventFormPlaceholder />} />
               <Route path="activity-logs" element={<ActivityLogs />} />
               <Route path="users" element={<UserManagement />} />
             </Route>
