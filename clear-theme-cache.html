@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Theme Cache</title>
+</head>
+<body>
+    <h1>Theme Cache Clearer</h1>
+    <button onclick="clearCache()">Clear Theme Cache</button>
+    <pre id="output"></pre>
+
+    <script>
+        function clearCache() {
+            const output = document.getElementById('output');
+            output.textContent = 'Before clearing:\n';
+            output.textContent += 'modern_theme_cache: ' + localStorage.getItem('modern_theme_cache') + '\n';
+            output.textContent += 'modern_theme_hash: ' + localStorage.getItem('modern_theme_hash') + '\n';
+            output.textContent += 'modern_theme_mode: ' + localStorage.getItem('modern_theme_mode') + '\n\n';
+
+            localStorage.removeItem('modern_theme_cache');
+            localStorage.removeItem('modern_theme_hash');
+            localStorage.removeItem('modern_theme_mode');
+
+            output.textContent += 'Cache cleared! Please refresh your application.\n';
+            output.textContent += '\nAfter clearing:\n';
+            output.textContent += 'modern_theme_cache: ' + localStorage.getItem('modern_theme_cache') + '\n';
+            output.textContent += 'modern_theme_hash: ' + localStorage.getItem('modern_theme_hash') + '\n';
+            output.textContent += 'modern_theme_mode: ' + localStorage.getItem('modern_theme_mode');
+        }
+    </script>
+</body>
+</html>

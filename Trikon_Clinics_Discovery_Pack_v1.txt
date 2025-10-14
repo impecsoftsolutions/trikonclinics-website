@@ -1,0 +1,300 @@
+oor user experience)
+   Likelihood: Low
+   Mitigation:
+   - Implement Next.js image optimization
+   - Use ISR for static-like pages
+   - Conduct load testing before launch
+   - Set up performance monitoring (Web Vitals)
+   - Have rollback plan ready
+
+6. RLS POLICY GAPS
+   Risk: Sensitive data exposed due to missing policies
+   Impact: High (security breach)
+   Likelihood: Medium
+   Mitigation:
+   - Review all RLS policies with security checklist
+   - Test with different user roles
+   - Enable RLS on ALL tables by default
+   - Conduct security audit before launch
+   - Monitor activity logs for suspicious access
+
+7. FORM SPAM
+   Risk: Contact/appointment forms overwhelmed with spam
+   Impact: Medium (lost legitimate inquiries)
+   Likelihood: High
+   Mitigation:
+   - Implement rate limiting (5 submissions per IP per minute)
+   - Add honeypot fields to forms
+   - Consider Cloudflare Turnstile (privacy-friendly CAPTCHA)
+   - Enable email notifications for new submissions
+   - Implement spam detection rules
+
+8. MEDIA STORAGE OVERFLOW
+   Risk: Supabase storage limits exceeded
+   Impact: Medium (cannot upload new images)
+   Likelihood: Low
+   Mitigation:
+   - Implement image compression before upload
+   - Set file size limits (10 MB max)
+   - Create automated cleanup for old renditions
+   - Monitor storage usage dashboard
+   - Configure alerts at 80% capacity
+
+9. CONCURRENT EDITING CONFLICTS
+   Risk: Multiple admins editing same content simultaneously
+   Impact: Low (overwrite each other's changes)
+   Likelihood: Medium
+   Mitigation:
+   - Implement optimistic locking with version numbers
+   - Show "currently editing" indicator
+   - Auto-save drafts every 30 seconds
+   - Provide conflict resolution UI
+   - Log all edits in activity log
+
+10. THIRD-PARTY SERVICE DOWNTIME
+    Risk: Google Fonts, analytics, or other CDN services down
+    Impact: Low (minor visual/tracking issues)
+    Likelihood: Low
+    Mitigation:
+    - Implement font loading strategy (swap)
+    - Self-host critical fonts as fallback
+    - Make analytics scripts async/defer
+    - Test site functionality without third-party services
+    - Document fallback procedures
+
+--------------------------------------------------------------------------------
+CUTOVER PLAN
+--------------------------------------------------------------------------------
+
+PHASE 1: PRE-MIGRATION (WEEK -2 TO -1)
+
+Day -14 to -8:
+- Announce upcoming migration to all admin users
+- Schedule maintenance window (suggestion: Saturday 10 PM - Sunday 6 AM)
+- Complete staging environment setup
+- Test all migrations on staging database
+- Validate theme functionality on staging
+- Run security audit on new codebase
+
+Day -7 to -1:
+- Freeze content changes (content lockdown)
+- Full database backup to external storage
+- Test data migration scripts on backup copy
+- Prepare rollback procedures
+- Create migration checklist
+- Brief admin team on expected changes
+
+PHASE 2: MIGRATION DAY (DAY 0)
+
+T-2 hours (8:00 PM):
+- Post maintenance notice on website
+- Send email to all admin users
+- Disable public access (show maintenance page)
+- Final database backup
+- Stop all cron jobs/background tasks
+
+T-0 (10:00 PM):
+- Begin database migration execution
+- Run migrations 0001 through 0010
+- Validate data integrity with SQL checks
+- Seed new tables with system data
+- Migrate existing content to new schema
+
+T+2 hours (12:00 AM):
+- Deploy Next.js application to production
+- Configure environment variables
+- Test authentication with test accounts
+- Validate public pages rendering
+- Check admin panel functionality
+
+T+3 hours (1:00 AM):
+- Run smoke tests on critical flows
+- Verify RLS policies working correctly
+- Test form submissions
+- Check image uploads
+- Validate theme activation
+
+T+4 hours (2:00 AM):
+- If all tests pass: Enable public access
+- If tests fail: Execute rollback plan
+- Remove maintenance notice
+- Send "migration complete" email to admins
+
+T+8 hours (6:00 AM):
+- Monitor error logs and performance metrics
+- Check for any reported issues
+- Standby for emergency support
+
+PHASE 3: POST-MIGRATION (DAY 1-7)
+
+Day 1-3:
+- Monitor admin panel usage closely
+- Assist users with any new UI questions
+- Fix any minor bugs discovered
+- Check form submissions for spam
+- Monitor search rankings
+
+Day 4-7:
+- Collect admin feedback on new features
+- Document any workflow changes
+- Update admin user guide
+- Plan training session for advanced features
+- Schedule old database deletion (after 1 week)
+
+PHASE 4: STABILIZATION (WEEK 2-4)
+
+Week 2:
+- Analyze performance metrics
+- Optimize slow queries if needed
+- Fine-tune ISR revalidation intervals
+- Review activity logs for patterns
+- Plan iterative improvements
+
+Week 3-4:
+- Delete old database after confirming stability
+- Archive old codebase for reference
+- Update technical documentation
+- Conduct retrospective meeting
+- Plan next features (FAQ, Blog, Gallery)
+
+--------------------------------------------------------------------------------
+ROLLBACK PROCEDURES
+--------------------------------------------------------------------------------
+
+IF CRITICAL ISSUES FOUND DURING MIGRATION:
+
+1. Immediate Actions (within 30 minutes):
+   - Enable maintenance mode
+   - Stop new migration tasks
+   - Preserve current database state
+
+2. Rollback Execution (1 hour):
+   - Restore database from pre-migration backup
+   - Redeploy previous Vite application
+   - Re-enable old authentication
+   - Test old system functionality
+   - Disable maintenance mode
+
+3. Post-Rollback (2 hours):
+   - Send "migration postponed" email to admins
+   - Analyze failure root cause
+   - Update migration scripts
+   - Schedule new migration date
+   - Document lessons learned
+
+IF ISSUES FOUND POST-LAUNCH (DAY 1-7):
+
+- Minor bugs: Fix forward, no rollback needed
+- Major security issue: Immediate rollback
+- Performance issues: Investigate, optimize, may not require rollback
+- Data corruption: Rollback and restore from backup
+
+--------------------------------------------------------------------------------
+SUCCESS CRITERIA
+--------------------------------------------------------------------------------
+
+Migration considered successful when:
+- All existing data migrated correctly (100% integrity check)
+- All admin users can log in and perform tasks
+- Public website accessible and fast (LCP < 2.5s)
+- No critical security vulnerabilities
+- RLS policies working correctly
+- Forms accepting submissions without spam overflow
+- Search functionality working
+- Themes applying correctly
+- Zero data loss
+- Admin feedback positive (>80% satisfaction)
+
+
+================================================================================
+CLARIFYING QUESTIONS
+================================================================================
+
+Before proceeding with implementation, I need clarification on:
+
+1. NEXT.JS MIGRATION: Do you want to migrate from Vite/React to Next.js for 
+   better SEO and performance, or continue with Vite? 
+   (Recommendation: Next.js for this type of public website)
+
+2. RICH TEXT STORAGE: Should we store health library content (symptoms, 
+   treatment) as HTML or structured JSON? 
+   (Recommendation: HTML with DOMPurify sanitization for flexibility)
+
+3. THEME PRIORITY: Should we complete the new CMS (pages, templates, 
+   components) first, or focus on missing public pages (locations, departments, 
+   packages)? 
+   (Recommendation: Public pages first, then CMS)
+
+
+================================================================================
+OVERALL APPROACH & BENEFITS
+================================================================================
+
+--------------------------------------------------------------------------------
+APPROACH
+--------------------------------------------------------------------------------
+
+This is a PHASED REBUILD rather than a complete rewrite:
+
+1. Keep what works (Health Library, Modern Themes, existing RBAC)
+2. Add missing public-facing content types (Locations, Departments, Packages, 
+   FAQs, Blog, Gallery)
+3. Build new CMS foundation (Pages, Templates, Components, Forms)
+4. Enhance with better SEO, performance, and admin UX
+5. Migrate incrementally to minimize risk
+
+--------------------------------------------------------------------------------
+KEY BENEFITS
+--------------------------------------------------------------------------------
+
+FOR END USERS (PATIENTS):
+- Faster page loads with Next.js SSR/SSG
+- Better mobile experience with responsive design
+- Comprehensive health information with Health Library
+- Easy navigation and search
+- Multiple locations and departments visible
+- Treatment packages and pricing transparency
+- Patient testimonials build trust
+
+FOR HOSPITAL ADMINISTRATORS:
+- No more SQL migrations to run manually
+- Full CMS with visual page builder
+- Drag-and-drop form builder
+- Media library with automatic image optimization
+- Version control and rollback for content
+- Content approval workflow
+- Activity audit trail
+- Multiple themes with one-click switching
+- Mobile-friendly admin panel
+
+FOR DEVELOPERS:
+- Type-safe with TypeScript and Zod
+- Modern Next.js App Router architecture
+- Automatic image optimization
+- Built-in SEO tools
+- Comprehensive test coverage possible
+- Clear separation of concerns
+- Reusable component library
+- Database migrations version controlled
+
+FOR BUSINESS:
+- Better SEO rankings with SSR
+- Lower bounce rates with fast performance
+- More patient inquiries from improved UX
+- Reduced admin training time
+- Scalable architecture for future growth
+- WCAG 2.2 AA compliance (legal requirement)
+- Security best practices implemented
+
+
+================================================================================
+END OF DISCOVERY PACK V1
+================================================================================
+
+This concludes the Discovery Pack v1. Please review all sections A-F and 
+provide feedback or answers to the clarifying questions before proceeding 
+with implementation.
+
+Generated: 2025
+Project: Trikon Clinics Hospital Management System
+Supabase Project ID: ztfrjlmkemqjbclaeqfw
