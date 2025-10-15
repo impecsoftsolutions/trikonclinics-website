@@ -1,15 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/supabase';
-import bcrypt from 'bcryptjs';
+import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 type User = Database['public']['Tables']['users']['Row'];
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,59 +25,155 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('hospital_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error('Error getting session:', sessionError);
+          if (mounted) {
+            setLoading(false);
+          }
+          return;
+        }
+
+        if (currentSession) {
+          if (mounted) {
+            setSession(currentSession);
+          }
+          await fetchUserData(currentSession.user.id);
+        } else {
+          if (mounted) {
+            setLoading(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log('Auth state changed:', event);
+
+      if (!mounted) return;
+
+      if (currentSession) {
+        setSession(currentSession);
+        await fetchUserData(currentSession.user.id);
+      } else {
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const login = async (username: string, password: string) => {
+  const fetchUserData = async (authUserId: string) => {
     try {
-      const { data: users, error } = await supabase
+      const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
-        .eq('username', username)
+        .eq('auth_user_id', authUserId)
         .eq('is_enabled', true)
         .maybeSingle();
 
-      if (error) {
-        console.error('Login error:', error);
-        return { success: false, error: 'An error occurred during login' };
+      if (userError) {
+        console.error('Error fetching user data:', userError);
+        setUser(null);
+        setLoading(false);
+        return;
       }
 
-      if (!users) {
-        return { success: false, error: 'Invalid username or password' };
+      if (!userData) {
+        console.error('No user data found for auth user:', authUserId);
+        setUser(null);
+        setLoading(false);
+        return;
       }
 
-      const passwordMatch = await bcrypt.compare(password, users.password);
+      setUser(userData);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error in fetchUserData:', error);
+      setUser(null);
+      setLoading(false);
+    }
+  };
 
-      if (!passwordMatch) {
-        return { success: false, error: 'Invalid username or password' };
+  const login = async (email: string, password: string) => {
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        console.error('Login error:', authError);
+        return {
+          success: false,
+          error: authError.message === 'Invalid login credentials'
+            ? 'Invalid email or password'
+            : 'An error occurred during login'
+        };
+      }
+
+      if (!authData.user) {
+        return { success: false, error: 'Login failed - no user returned' };
+      }
+
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('auth_user_id', authData.user.id)
+        .eq('is_enabled', true)
+        .maybeSingle();
+
+      if (userError) {
+        console.error('Error fetching user data:', userError);
+        await supabase.auth.signOut();
+        return { success: false, error: 'Failed to load user data' };
+      }
+
+      if (!userData) {
+        await supabase.auth.signOut();
+        return { success: false, error: 'User account is disabled or not found' };
       }
 
       const { error: updateError } = await supabase
         .from('users')
         .update({ last_login: new Date().toISOString() })
-        .eq('id', users.id);
+        .eq('id', userData.id);
 
       if (updateError) {
         console.error('Error updating last login:', updateError);
       }
 
       await supabase.from('activity_logs').insert({
-        user_id: users.id,
+        user_id: userData.id,
         action: 'login',
-        description: `User ${users.username} logged in`,
+        description: `User ${userData.username} logged in`,
         table_affected: 'users',
-        record_id: users.id,
+        record_id: userData.id,
       });
 
-      setUser(users);
-      localStorage.setItem('hospital_user', JSON.stringify(users));
+      setUser(userData);
+      setSession(authData.session);
 
       return { success: true };
     } catch (error) {
@@ -96,12 +193,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
 
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('hospital_user');
+    setSession(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, session, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
