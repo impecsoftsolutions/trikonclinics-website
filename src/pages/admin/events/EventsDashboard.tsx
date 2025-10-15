@@ -15,7 +15,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { EventThumbnail } from '../../../components/events/EventThumbnail';
-import { TagBadges } from '../../../components/events/TagBadges';
+import { CategoryBadges } from '../../../components/events/CategoryBadges';
 import { StatCardSkeleton, EventCardSkeleton } from '../../../components/events/SkeletonLoader';
 import { ToastContainer } from '../../../components/events/Toast';
 import { useToast } from '../../../hooks/useToast';
@@ -36,7 +36,7 @@ interface RecentEvent {
   created_at: string;
   updated_at: string;
   thumbnail_url?: string;
-  tags: Array<{ id: string; tag_name: string; slug: string }>;
+  categories: Array<{ id: string; tag_name: string; slug: string }>;
   created_by_username?: string;
 }
 
@@ -158,7 +158,7 @@ export const EventsDashboard: React.FC = () => {
         created_at: event.created_at,
         updated_at: event.updated_at,
         thumbnail_url: event.event_images?.[0]?.image_url_small || null,
-        tags: event.event_tags?.map((et: any) => et.tags).filter(Boolean) || [],
+        categories: event.event_tags?.map((et: any) => et.tags).filter(Boolean) || [],
         created_by_username: event.users?.username || 'Unknown',
       })) || [];
 
@@ -212,7 +212,7 @@ export const EventsDashboard: React.FC = () => {
         created_at: event.created_at,
         updated_at: event.updated_at,
         thumbnail_url: event.event_images?.[0]?.image_url_small || null,
-        tags: event.event_tags?.map((et: any) => et.tags).filter(Boolean) || [],
+        categories: event.event_tags?.map((et: any) => et.tags).filter(Boolean) || [],
         created_by_username: event.users?.username || 'Unknown',
       })) || [];
 
@@ -374,7 +374,7 @@ export const EventsDashboard: React.FC = () => {
                     <p className="text-sm text-gray-500 mb-2">
                       {format(new Date(event.event_date), 'EEE, dd MMM yyyy')}
                     </p>
-                    <TagBadges tags={event.tags} maxVisible={2} />
+                    <CategoryBadges tags={event.categories} maxVisible={2} />
                   </div>
                   <button
                     onClick={() => navigate(`/admin/events/edit/${event.id}`)}

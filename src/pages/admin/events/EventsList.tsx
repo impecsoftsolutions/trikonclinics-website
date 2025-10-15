@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { EVENTS_PAGE_SIZE } from '../../../constants/events';
 import { EventThumbnail } from '../../../components/events/EventThumbnail';
-import { TagBadges } from '../../../components/events/TagBadges';
+import { CategoryBadges } from '../../../components/events/CategoryBadges';
 import { EventStatusBadge } from '../../../components/events/EventStatusBadge';
 import { TableSkeleton } from '../../../components/events/SkeletonLoader';
 import { ToastContainer } from '../../../components/events/Toast';
@@ -38,11 +38,11 @@ interface Event {
   created_at: string;
   updated_at: string;
   thumbnail_url?: string;
-  tags: Array<{ id: string; tag_name: string; slug: string }>;
+  categories: Array<{ id: string; tag_name: string; slug: string }>;
   created_by_username?: string;
 }
 
-interface Tag {
+interface Category {
   id: string;
   tag_name: string;
   slug: string;
@@ -65,7 +65,7 @@ export const EventsList: React.FC = () => {
   const { toasts, removeToast, success, error } = useToast();
 
   const [events, setEvents] = useState<Event[]>([]);
-  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
 
@@ -74,8 +74,8 @@ export const EventsList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>(
     (searchParams.get('status') as any) || 'all'
   );
-  const [selectedTags, setSelectedTags] = useState<string[]>(
-    searchParams.get('tags')?.split(',').filter(Boolean) || []
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(
+    searchParams.get('categories')?.split(',').filter(Boolean) || []
   );
   const [dateFrom, setDateFrom] = useState(searchParams.get('dateFrom') || '');
   const [dateTo, setDateTo] = useState(searchParams.get('dateTo') || '');
@@ -113,7 +113,7 @@ export const EventsList: React.FC = () => {
       return;
     }
 
-    loadTags();
+    loadCategories();
   }, [user, navigate]);
 
   useEffect(() => {
@@ -127,13 +127,13 @@ export const EventsList: React.FC = () => {
   useEffect(() => {
     updateURLParams();
     loadEvents();
-  }, [searchTerm, statusFilter, selectedTags, dateFrom, dateTo, sortField, sortOrder, currentPage]);
+  }, [searchTerm, statusFilter, selectedCategories, dateFrom, dateTo, sortField, sortOrder, currentPage]);
 
   const updateURLParams = () => {
     const params = new URLSearchParams();
     if (searchTerm) params.set('search', searchTerm);
     if (statusFilter !== 'all') params.set('status', statusFilter);
-    if (selectedTags.length > 0) params.set('tags', selectedTags.join(','));
+    if (selectedCategories.length > 0) params.set('categories', selectedCategories.join(','));
     if (dateFrom) params.set('dateFrom', dateFrom);
     if (dateTo) params.set('dateTo', dateTo);
     if (sortField !== 'date') params.set('sortField', sortField);
@@ -142,17 +142,27 @@ export const EventsList: React.FC = () => {
     setSearchParams(params);
   };
 
-  const loadTags = async () => {
+  const loadCategories = async () => {
     try {
-      const { data, error: tagsError } = await supabase
+      console.log('🔍 [EventsList] Loading categories from database...');
+      const { data, error: categoriesError } = await supabase
         .from('tags')
         .select('*')
         .order('tag_name');
 
-      if (tagsError) throw tagsError;
-      if (data) setAllTags(data);
+      console.log('📦 [EventsList] Categories query result:', { data, error: categoriesError });
+      console.log('📊 [EventsList] Number of categories found:', data?.length || 0);
+
+      if (categoriesError) {
+        console.error('❌ [EventsList] Error loading categories:', categoriesError);
+        throw categoriesError;
+      }
+      if (data) {
+        console.log('✅ [EventsList] Categories loaded successfully:', data);
+        setAllCategories(data);
+      }
     } catch (err) {
-      console.error('Error loading tags:', err);
+      console.error('❌ [EventsList] Exception loading categories:', err);
     }
   };
 
@@ -224,10 +234,10 @@ export const EventsList: React.FC = () => {
 
       let filteredData = data || [];
 
-      if (selectedTags.length > 0) {
+      if (selectedCategories.length > 0) {
         filteredData = filteredData.filter((event: any) => {
-          const eventTags = event.event_tags?.map((et: any) => et.tags?.slug).filter(Boolean) || [];
-          return selectedTags.some((tag) => eventTags.includes(tag));
+          const eventCategories = event.event_tags?.map((et: any) => et.tags?.slug).filter(Boolean) || [];
+          return selectedCategories.some((category) => eventCategories.includes(category));
         });
       }
 
@@ -240,7 +250,7 @@ export const EventsList: React.FC = () => {
         created_at: event.created_at,
         updated_at: event.updated_at,
         thumbnail_url: event.event_images?.[0]?.image_url_small || null,
-        tags: event.event_tags?.map((et: any) => et.tags).filter(Boolean) || [],
+        categories: event.event_tags?.map((et: any) => et.tags).filter(Boolean) || [],
         created_by_username: event.users?.username || 'Unknown',
       }));
 
@@ -273,7 +283,7 @@ export const EventsList: React.FC = () => {
     setSearchInput('');
     setSearchTerm('');
     setStatusFilter('all');
-    setSelectedTags([]);
+    setSelectedCategories([]);
     setDateFrom('');
     setDateTo('');
     setSortField('date');
@@ -284,7 +294,7 @@ export const EventsList: React.FC = () => {
   const activeFilterCount =
     (searchTerm ? 1 : 0) +
     (statusFilter !== 'all' ? 1 : 0) +
-    selectedTags.length +
+    selectedCategories.length +
     (dateFrom ? 1 : 0) +
     (dateTo ? 1 : 0);
 
@@ -418,7 +428,7 @@ export const EventsList: React.FC = () => {
         }}
         onConfirm={() => eventToDelete && handleDelete(eventToDelete)}
         title="Delete Event"
-        message="Are you sure you want to delete this event? This action will permanently delete the event and all associated images, videos, and tags. This cannot be undone."
+        message="Are you sure you want to delete this event? This action will permanently delete the event and all associated images, videos, and categories. This cannot be undone."
         confirmText="Delete"
         isLoading={deleting}
       />
@@ -428,7 +438,7 @@ export const EventsList: React.FC = () => {
         onClose={() => setShowBulkDeleteModal(false)}
         onConfirm={handleBulkDelete}
         title="Delete Multiple Events"
-        message={`Are you sure you want to delete ${selectedEvents.size} events? This action will permanently delete all selected events and their associated images, videos, and tags. This cannot be undone.`}
+        message={`Are you sure you want to delete ${selectedEvents.size} events? This action will permanently delete all selected events and their associated images, videos, and categories. This cannot be undone.`}
         confirmText={`Delete ${selectedEvents.size} Events`}
         isLoading={deleting}
       />
@@ -484,22 +494,22 @@ export const EventsList: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
+              Category {selectedCategories.length > 0 && `(${selectedCategories.length})`}
             </label>
             <select
               multiple
-              value={selectedTags}
+              value={selectedCategories}
               onChange={(e) => {
                 const selected = Array.from(e.target.selectedOptions, (option) => option.value);
-                setSelectedTags(selected);
+                setSelectedCategories(selected);
                 setCurrentPage(1);
               }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               size={3}
             >
-              {allTags.map((tag) => (
-                <option key={tag.id} value={tag.slug}>
-                  {tag.tag_name}
+              {allCategories.map((category) => (
+                <option key={category.id} value={category.slug}>
+                  {category.tag_name}
                 </option>
               ))}
             </select>
@@ -614,7 +624,7 @@ export const EventsList: React.FC = () => {
                     {renderSortIcon('date')}
                   </div>
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Tags</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Category</th>
                 <th
                   className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('status')}
@@ -697,7 +707,7 @@ export const EventsList: React.FC = () => {
                       </p>
                     </td>
                     <td className="px-4 py-3">
-                      <TagBadges tags={event.tags} maxVisible={3} />
+                      <CategoryBadges tags={event.categories} maxVisible={3} />
                     </td>
                     <td className="px-4 py-3">
                       <EventStatusBadge status={event.status} size="sm" />

@@ -35,7 +35,7 @@ import {
   Upload,
 } from 'lucide-react';
 
-interface Tag {
+interface Category {
   id: string;
   tag_name: string;
   slug: string;
@@ -108,8 +108,8 @@ export const EventForm: React.FC = () => {
   const [isDirty, setIsDirty] = useState(false);
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
 
-  const [allTags, setAllTags] = useState<Tag[]>([]);
-  const [tagsLoading, setTagsLoading] = useState(true);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   const [originalSlug, setOriginalSlug] = useState('');
   const [slugValidation, setSlugValidation] = useState<SlugValidationResult>({
@@ -157,7 +157,7 @@ export const EventForm: React.FC = () => {
       return;
     }
 
-    loadTags();
+    loadCategories();
 
     if (isEditMode && id) {
       loadEvent(id);
@@ -200,21 +200,36 @@ export const EventForm: React.FC = () => {
     };
   }, [isDirty, isEditMode]);
 
-  const loadTags = async () => {
+  const loadCategories = async () => {
     try {
-      setTagsLoading(true);
-      const { data, error: tagsError } = await supabase
+      setCategoriesLoading(true);
+      console.log('🔍 [EventForm] Starting to load categories from database...');
+
+      const { data, error: categoriesError } = await supabase
         .from('tags')
         .select('*')
         .order('tag_name');
 
-      if (tagsError) throw tagsError;
-      if (data) setAllTags(data);
+      console.log('📦 [EventForm] Categories query result:', { data, error: categoriesError });
+      console.log('📊 [EventForm] Number of categories found:', data?.length || 0);
+
+      if (categoriesError) {
+        console.error('❌ [EventForm] Error loading categories:', categoriesError);
+        throw categoriesError;
+      }
+
+      if (data) {
+        console.log('✅ [EventForm] Categories loaded successfully:', data);
+        setAllCategories(data);
+      } else {
+        console.warn('⚠️ [EventForm] No categories data returned from database');
+      }
     } catch (err) {
-      console.error('Error loading tags:', err);
-      error('Failed to load tags');
+      console.error('❌ [EventForm] Exception loading categories:', err);
+      error('Failed to load categories');
     } finally {
-      setTagsLoading(false);
+      setCategoriesLoading(false);
+      console.log('🏁 [EventForm] Categories loading complete');
     }
   };
 
@@ -370,12 +385,12 @@ export const EventForm: React.FC = () => {
     }
   };
 
-  const handleTagToggle = (tagId: string) => {
+  const handleCategoryToggle = (categoryId: string) => {
     setFormData((prev) => {
-      const newTags = prev.tags.includes(tagId)
-        ? prev.tags.filter((t) => t !== tagId)
-        : [...prev.tags, tagId];
-      return { ...prev, tags: newTags };
+      const newCategories = prev.tags.includes(categoryId)
+        ? prev.tags.filter((t) => t !== categoryId)
+        : [...prev.tags, categoryId];
+      return { ...prev, tags: newCategories };
     });
     setIsDirty(true);
   };
@@ -1134,35 +1149,35 @@ export const EventForm: React.FC = () => {
               </div>
             </div>
 
-            {/* Tags */}
+            {/* Category */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tags (optional)
+                Category (optional)
               </label>
-              {tagsLoading ? (
+              {categoriesLoading ? (
                 <div className="flex items-center gap-2 text-gray-500">
                   <Loader className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">Loading tags...</span>
+                  <span className="text-sm">Loading categories...</span>
                 </div>
               ) : (
                 <>
                   <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto">
-                    {allTags.length === 0 ? (
-                      <p className="text-sm text-gray-500">No tags available</p>
+                    {allCategories.length === 0 ? (
+                      <p className="text-sm text-gray-500">No categories available</p>
                     ) : (
                       <div className="space-y-2">
-                        {allTags.map((tag) => (
+                        {allCategories.map((category) => (
                           <label
-                            key={tag.id}
+                            key={category.id}
                             className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
                           >
                             <input
                               type="checkbox"
-                              checked={formData.tags.includes(tag.id)}
-                              onChange={() => handleTagToggle(tag.id)}
+                              checked={formData.tags.includes(category.id)}
+                              onChange={() => handleCategoryToggle(category.id)}
                               className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                             />
-                            <span className="text-sm text-gray-700">{tag.tag_name}</span>
+                            <span className="text-sm text-gray-700">{category.tag_name}</span>
                           </label>
                         ))}
                       </div>
@@ -1170,19 +1185,20 @@ export const EventForm: React.FC = () => {
                   </div>
                   {formData.tags.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {formData.tags.map((tagId) => {
-                        const tag = allTags.find((t) => t.id === tagId);
-                        return tag ? (
+                      {formData.tags.map((categoryId) => {
+                        const category = allCategories.find((c) => c.id === categoryId);
+                        return category ? (
                           <span
-                            key={tagId}
+                            key={categoryId}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm"
                           >
                             <Tag className="w-3 h-3" />
-                            {tag.tag_name}
+                            {category.tag_name}
                             <button
                               type="button"
-                              onClick={() => handleTagToggle(tagId)}
+                              onClick={() => handleCategoryToggle(categoryId)}
                               className="hover:text-blue-900 transition-colors"
+                              title="Remove category"
                             >
                               <X className="w-3 h-3" />
                             </button>
