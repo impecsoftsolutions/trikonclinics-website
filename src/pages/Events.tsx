@@ -42,8 +42,8 @@ export const Events: React.FC = () => {
         .from('events')
         .select(`
           *,
-          event_images(count),
-          event_videos(count)
+          event_images!event_images_event_id_fkey(count),
+          event_videos!event_videos_event_id_fkey(count)
         `)
         .order('event_date', { ascending: false });
 
