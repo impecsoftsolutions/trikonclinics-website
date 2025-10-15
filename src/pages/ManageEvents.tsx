@@ -14,8 +14,7 @@ const ManageEvents: React.FC = () => {
 
   const [formData, setFormData] = useState({
     title: '',
-    event_date: '',
-    status: 'draft' as 'draft' | 'published'
+    event_date: ''
   });
 
   const generateSlug = (title: string): string => {
@@ -73,7 +72,7 @@ const ManageEvents: React.FC = () => {
           title: formData.title.trim(),
           slug: slug,
           event_date: formData.event_date,
-          status: formData.status,
+          status: 'draft',
           created_by: user?.id || null
         })
         .select()
@@ -81,7 +80,7 @@ const ManageEvents: React.FC = () => {
 
       if (insertError) throw insertError;
 
-      setSuccess('Event saved successfully!');
+      setSuccess('Event saved as draft successfully!');
 
       setTimeout(() => {
         navigate('/admin/events');
@@ -148,22 +147,6 @@ const ManageEvents: React.FC = () => {
               disabled={loading}
             />
           </div>
-        </div>
-
-        <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-            Status
-          </label>
-          <select
-            id="status"
-            value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value as 'draft' | 'published' })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled={loading}
-          >
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-          </select>
         </div>
 
         <div className="flex justify-end pt-4">

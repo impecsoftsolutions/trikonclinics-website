@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Plus, Edit2, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Calendar, Plus, ImagePlus, Trash2, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -26,6 +26,7 @@ export const Events: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchEvents();
@@ -61,6 +62,29 @@ export const Events: React.FC = () => {
       console.error('Error fetching events:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTogglePublish = async (id: string, currentStatus: 'draft' | 'published') => {
+    try {
+      setPublishingId(id);
+      const newStatus = currentStatus === 'draft' ? 'published' : 'draft';
+
+      const { error } = await supabase
+        .from('events')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setEvents(events.map(event =>
+        event.id === id ? { ...event, status: newStatus } : event
+      ));
+    } catch (error) {
+      console.error('Error updating event status:', error);
+      alert('Failed to update event status. Please try again.');
+    } finally {
+      setPublishingId(null);
     }
   };
 
@@ -177,7 +201,7 @@ export const Events: React.FC = () => {
                         ? 'bg-green-100 text-green-800'
                         : 'bg-gray-100 text-gray-800'
                     }`}>
-                      {event.status}
+                      {event.status === 'published' ? 'Live' : 'Draft'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -190,10 +214,33 @@ export const Events: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => navigate(`/admin/events/edit/${event.id}`)}
-                        className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded transition-colors"
-                        title="Edit event"
+                        className="flex items-center gap-1 text-blue-600 hover:text-blue-900 px-3 py-1.5 hover:bg-blue-50 rounded transition-colors text-xs font-medium"
+                        title="Add photos to event"
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <ImagePlus className="w-4 h-4" />
+                        Add Photos
+                      </button>
+                      <button
+                        onClick={() => handleTogglePublish(event.id, event.status)}
+                        disabled={publishingId === event.id}
+                        className={`flex items-center gap-1 px-3 py-1.5 rounded transition-colors text-xs font-medium ${
+                          event.status === 'draft'
+                            ? 'text-green-600 hover:text-green-900 hover:bg-green-50'
+                            : 'text-orange-600 hover:text-orange-900 hover:bg-orange-50'
+                        } disabled:opacity-50`}
+                        title={event.status === 'draft' ? 'Publish event' : 'Unpublish event'}
+                      >
+                        {event.status === 'draft' ? (
+                          <>
+                            <Eye className="w-4 h-4" />
+                            Publish
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="w-4 h-4" />
+                            Unpublish
+                          </>
+                        )}
                       </button>
                       <button
                         onClick={() => setDeleteId(event.id)}
