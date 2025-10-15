@@ -1,22 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Building2, LogIn } from 'lucide-react';
+import { createSuperAdmin } from '../scripts/createSuperAdmin';
 
 export const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const initializeDatabase = async () => {
+      try {
+        await createSuperAdmin();
+      } catch (error) {
+        console.error('Failed to initialize database:', error);
+      } finally {
+        setInitializing(false);
+      }
+    };
+
+    initializeDatabase();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    const result = await login(email, password);
+    const result = await login(username, password);
 
     if (result.success) {
       navigate('/admin/dashboard');
@@ -26,6 +42,20 @@ export const Login: React.FC = () => {
 
     setLoading(false);
   };
+
+  if (initializing) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden p-12">
+          <div className="flex flex-col items-center justify-center">
+            <Building2 className="w-16 h-16 text-blue-600 mb-4" />
+            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-gray-600 text-center">Initializing application...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
@@ -40,16 +70,16 @@ export const Login: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="p-8">
           <div className="mb-6">
-            <label htmlFor="email" className="block text-gray-700 font-medium mb-2">
-              Email Address
+            <label htmlFor="username" className="block text-gray-700 font-medium mb-2">
+              Username
             </label>
             <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
-              placeholder="Enter your email"
+              placeholder="Enter your username"
               required
             />
           </div>

@@ -14,7 +14,6 @@ import {
   Sparkles,
   BookOpen,
   Folder,
-  Calendar,
 } from 'lucide-react';
 import { canViewUsers, canManageContent, canViewLogs } from '../utils/permissions';
 
@@ -85,26 +84,6 @@ export const Sidebar: React.FC = () => {
       visible: canManageContent(user.role),
     },
     {
-      name: 'Events',
-      icon: Calendar,
-      path: '/admin/events/dashboard',
-      visible: canManageContent(user.role),
-      submenu: [
-        {
-          name: 'Dashboard',
-          path: '/admin/events/dashboard',
-        },
-        {
-          name: 'All Events',
-          path: '/admin/events/list',
-        },
-        {
-          name: 'Add New Event',
-          path: '/admin/events/add',
-        },
-      ],
-    },
-    {
       name: 'Activity Logs',
       icon: ClipboardList,
       path: '/admin/activity-logs',
@@ -130,44 +109,24 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      <nav className="p-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 100px)' }}>
+      <nav className="p-4">
         {menuItems
           .filter((item) => item.visible)
           .map((item) => (
-            <div key={item.path}>
-              <NavLink
-                to={item.path}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-all ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`
-                }
-              >
-                <item.icon className="w-5 h-5" />
-                <span>{item.name}</span>
-              </NavLink>
-              {'submenu' in item && item.submenu && (
-                <div className="ml-8 space-y-1 mb-2">
-                  {item.submenu.map((subItem) => (
-                    <NavLink
-                      key={subItem.path}
-                      to={subItem.path}
-                      className={({ isActive }) =>
-                        `flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all ${
-                          isActive
-                            ? 'bg-blue-50 text-blue-700 font-medium'
-                            : 'text-gray-600 hover:bg-gray-50'
-                        }`
-                      }
-                    >
-                      {subItem.name}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-all ${
+                  isActive
+                    ? 'bg-blue-50 text-blue-700 font-medium'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`
+              }
+            >
+              <item.icon className="w-5 h-5" />
+              <span>{item.name}</span>
+            </NavLink>
           ))}
       </nav>
     </aside>
