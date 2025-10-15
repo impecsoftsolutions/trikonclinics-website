@@ -20,6 +20,7 @@ import { ActivityLogs } from './pages/ActivityLogs';
 import { UserManagement } from './pages/UserManagement';
 import ManageIllnesses from './pages/ManageIllnesses';
 import ManageCategories from './pages/ManageCategories';
+import { Events } from './pages/Events';
 import ManageEvents from './pages/ManageEvents';
 import { ModernThemeSettings } from './pages/ModernThemeSettings';
 import { AdminLayout } from './layouts/AdminLayout';
@@ -54,6 +55,7 @@ function App() {
               <Route path="social-media" element={<SocialMedia />} />
               <Route path="health-library/illnesses" element={<ManageIllnesses />} />
               <Route path="health-library/categories" element={<ManageCategories />} />
+              <Route path="events" element={<Events />} />
               <Route path="events/new" element={<ManageEvents />} />
               <Route path="activity-logs" element={<ActivityLogs />} />
               <Route path="users" element={<UserManagement />} />
