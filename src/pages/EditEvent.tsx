@@ -33,7 +33,7 @@ interface SelectedFile {
 }
 
 const MAX_PHOTOS = 20;
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 const EditEvent: React.FC = () => {
@@ -260,8 +260,8 @@ const EditEvent: React.FC = () => {
     return formatFileSize(totalBytes);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setError('');
     setSuccess('');
 
@@ -309,6 +309,10 @@ const EditEvent: React.FC = () => {
     }
   };
 
+  const handleCancel = () => {
+    navigate('/admin/events');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -329,7 +333,7 @@ const EditEvent: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       <BackButton to="/admin/events" />
 
       <div className="flex items-center justify-between">
@@ -400,17 +404,6 @@ const EditEvent: React.FC = () => {
             maxLength={200}
             disabled={saving}
           />
-        </div>
-
-        <div className="flex justify-end pt-4">
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-          >
-            <Save className="w-5 h-5" />
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
         </div>
       </form>
 
@@ -534,6 +527,30 @@ const EditEvent: React.FC = () => {
         <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
           <Video className="w-12 h-12 text-gray-400 mx-auto mb-3" />
           <p className="text-gray-600">Video management coming in Phase 5</p>
+        </div>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-10">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={saving}
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={saving}
+              className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              <Save className="w-5 h-5" />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
