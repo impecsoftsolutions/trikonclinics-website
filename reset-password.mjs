@@ -14,17 +14,37 @@ const supabase = createClient(
   }
 );
 
-async function resetPassword() {
-  const { data, error } = await supabase.auth.admin.updateUserById(
-    '27abe569-8c24-4aac-9979-d2ab6ec5948b',
-    { password: 'TempPassword@123' }
-  );
+async function createAndLinkUser() {
+  console.log('🚀 Creating Supabase Auth user...');
+  
+  // Create auth user
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    email: 'admin@trikonclinics.com',
+    password: 'TempPassword@123',
+    email_confirm: true
+  });
 
-  if (error) {
-    console.error('❌ Error:', error);
-  } else {
-    console.log('✅ Password reset successfully!');
+  if (authError) {
+    console.error('❌ Error creating auth user:', authError);
+    return;
   }
+
+  console.log('✅ Auth user created:', authData.user.id);
+  
+  // Link to database user
+  const { error: updateError } = await supabase
+    .from('users')
+    .update({ auth_user_id: authData.user.id })
+    .eq('email', 'admin@trikonclinics.com');
+
+  if (updateError) {
+    console.error('❌ Error linking user:', updateError);
+    return;
+  }
+
+  console.log('✅ User linked successfully!');
+  console.log('📧 Email: admin@trikonclinics.com');
+  console.log('🔑 Password: TempPassword@123');
 }
 
-resetPassword();
+createAndLinkUser();
