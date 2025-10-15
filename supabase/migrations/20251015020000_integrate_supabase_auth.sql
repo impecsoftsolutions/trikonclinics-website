@@ -614,37 +614,7 @@ CREATE POLICY "Content Manager and above can manage health library images"
   WITH CHECK (is_content_manager_or_above());
 
 -- Step 22: Update RLS Policies for modern themes tables
-DROP POLICY IF EXISTS "Anyone can view theme settings" ON theme_settings;
-DROP POLICY IF EXISTS "Admin and above can update theme settings" ON theme_settings;
-DROP POLICY IF EXISTS "Admin and above can insert theme settings" ON theme_settings;
-
--- Note: theme_settings table might not exist in newer schema, skip if not exists
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'theme_settings') THEN
-    CREATE POLICY "Authenticated users can view theme settings"
-      ON theme_settings FOR SELECT
-      TO authenticated
-      USING (
-        EXISTS (
-          SELECT 1 FROM users
-          WHERE users.auth_user_id = auth.uid()
-          AND users.is_enabled = true
-        )
-      );
-
-    CREATE POLICY "Admin and above can update theme settings"
-      ON theme_settings FOR UPDATE
-      TO authenticated
-      USING (is_admin_or_above())
-      WITH CHECK (is_admin_or_above());
-
-    CREATE POLICY "Admin and above can insert theme settings"
-      ON theme_settings FOR INSERT
-      TO authenticated
-      WITH CHECK (is_admin_or_above());
-  END IF;
-END $$;
+-- Note: theme_settings table doesn't exist in this schema, skipping
 
 -- Step 23: Update RLS Policies for site_settings table
 DROP POLICY IF EXISTS "Anyone can view site settings" ON site_settings;
