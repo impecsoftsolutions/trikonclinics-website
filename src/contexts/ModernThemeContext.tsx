@@ -165,14 +165,26 @@ export const ModernThemeProvider: React.FC<ModernThemeProviderProps> = ({ childr
   };
 
   useEffect(() => {
+    // TEMPORARY FIX: Bypass theme loading for WebContainer compatibility
+    console.log('[Theme System] BYPASSED - Using fallback theme immediately');
+    setTheme(FALLBACK_THEME_CONFIG);
+    setThemeName(FALLBACK_THEME_NAME);
+    setHealthLibraryEnabled(true);
+    setLoading(false);
+
+    // Skip all database loading and asset injection
+    // TODO: Re-enable proper theme loading after fixing WebContainer issues
+
+    /* Original code commented out:
     const loadTheme = async () => {
       await loadActiveTheme();
       setLoading(false);
     };
-
     loadTheme();
+    */
   }, []);
 
+  /* Polling disabled for WebContainer compatibility
   useEffect(() => {
     if (!loading) {
       const pollInterval = setInterval(() => {
@@ -182,12 +194,15 @@ export const ModernThemeProvider: React.FC<ModernThemeProviderProps> = ({ childr
       return () => clearInterval(pollInterval);
     }
   }, [loading, currentHash]);
+  */
 
+  /* Document application disabled for WebContainer compatibility
   useEffect(() => {
     if (!loading) {
       applyThemeToDocument(theme);
     }
   }, [theme, loading]);
+  */
 
   if (loading) {
     return (
