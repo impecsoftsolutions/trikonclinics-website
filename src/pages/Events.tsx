@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Plus, ImagePlus, Trash2, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
+import { Calendar, Plus, Edit2, Trash2, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -13,6 +13,8 @@ interface Event {
   created_at: string;
   created_by: string;
   updated_at: string;
+  photos_count?: number;
+  videos_count?: number;
 }
 
 interface EventWithUser extends Event {
@@ -38,13 +40,22 @@ export const Events: React.FC = () => {
 
       const { data: eventsData, error: eventsError } = await supabase
         .from('events')
-        .select('*')
+        .select(`
+          *,
+          event_images(count),
+          event_videos(count)
+        `)
         .order('event_date', { ascending: false });
 
       if (eventsError) throw eventsError;
 
-      // Fetch user emails for created_by
-      const userIds = [...new Set(eventsData?.map(e => e.created_by).filter(Boolean))];
+      const processedEvents = eventsData?.map(event => ({
+        ...event,
+        photos_count: event.event_images?.[0]?.count || 0,
+        videos_count: event.event_videos?.[0]?.count || 0
+      })) || [];
+
+      const userIds = [...new Set(processedEvents.map(e => e.created_by).filter(Boolean))];
       const { data: usersData } = await supabase
         .from('users')
         .select('id, email')
@@ -52,10 +63,10 @@ export const Events: React.FC = () => {
 
       const userMap = new Map(usersData?.map(u => [u.id, u.email]) || []);
 
-      const eventsWithUsers = eventsData?.map(event => ({
+      const eventsWithUsers = processedEvents.map(event => ({
         ...event,
         created_by_email: userMap.get(event.created_by) || 'Unknown'
-      })) || [];
+      }));
 
       setEvents(eventsWithUsers);
     } catch (error) {
@@ -205,20 +216,23 @@ export const Events: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    0
+                    {event.photos_count || 0}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    0
+                    {event.videos_count || 0}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => navigate(`/admin/events/edit/${event.id}`)}
-                        className="flex items-center gap-1 text-blue-600 hover:text-blue-900 px-3 py-1.5 hover:bg-blue-50 rounded transition-colors text-xs font-medium"
-                        title="Add photos to event"
+                        className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded transition-colors"
+                        title="Manage event content"
                       >
-                        <ImagePlus className="w-4 h-4" />
-                        Add Photos
+                        {((event.photos_count || 0) === 0 && (event.videos_count || 0) === 0) ? (
+                          <Plus className="w-4 h-4" />
+                        ) : (
+                          <Edit2 className="w-4 h-4" />
+                        )}
                       </button>
                       <button
                         onClick={() => handleTogglePublish(event.id, event.status)}

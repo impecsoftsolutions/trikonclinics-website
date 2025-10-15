@@ -22,6 +22,7 @@ import ManageIllnesses from './pages/ManageIllnesses';
 import ManageCategories from './pages/ManageCategories';
 import { Events } from './pages/Events';
 import ManageEvents from './pages/ManageEvents';
+import EditEvent from './pages/EditEvent';
 import { ModernThemeSettings } from './pages/ModernThemeSettings';
 import { AdminLayout } from './layouts/AdminLayout';
 import { PublicLayout } from './layouts/PublicLayout';
@@ -57,6 +58,7 @@ function App() {
               <Route path="health-library/categories" element={<ManageCategories />} />
               <Route path="events" element={<Events />} />
               <Route path="events/new" element={<ManageEvents />} />
+              <Route path="events/edit/:id" element={<EditEvent />} />
               <Route path="activity-logs" element={<ActivityLogs />} />
               <Route path="users" element={<UserManagement />} />
             </Route>
