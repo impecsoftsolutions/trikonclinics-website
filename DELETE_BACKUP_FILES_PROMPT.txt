@@ -1,0 +1,28 @@
+================================================================================
+CLEANUP PROMPT - Copy and paste this entire text to Claude Code
+================================================================================
+
+I have verified that the database table deletion was successful and my website is working perfectly. I no longer need the backup files.
+
+Please delete the following files from the project:
+
+1. backup_tables_20251015_164928.sql
+2. inspection_queries.sql
+3. drop_unused_tables.sql
+4. verification_queries.sql
+5. DELETE_BACKUP_FILES_PROMPT.txt (this file itself)
+6. .backup_timestamp (hidden timestamp file)
+
+INSTRUCTIONS FOR CLAUDE:
+- Delete all 6 files listed above
+- Confirm each file was deleted
+- Do NOT delete any other files
+- Do NOT modify any other files
+- These are temporary backup files that are no longer needed
+
+CONTEXT:
+These backup files were created as a safety measure before dropping unused database tables (themes, site_settings, modern_theme_assets, modern_theme_versions). The deletion was successful, the website is functioning normally, and these backup files can now be safely removed.
+
+================================================================================
+END OF CLEANUP PROMPT
+================================================================================
