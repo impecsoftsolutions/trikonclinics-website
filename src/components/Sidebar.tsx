@@ -14,6 +14,7 @@ import {
   Sparkles,
   BookOpen,
   Folder,
+  Calendar,
 } from 'lucide-react';
 import { canViewUsers, canManageContent, canViewLogs } from '../utils/permissions';
 
@@ -57,6 +58,12 @@ export const Sidebar: React.FC = () => {
       name: 'Services',
       icon: Briefcase,
       path: '/admin/services',
+      visible: canManageContent(user.role),
+    },
+    {
+      name: 'Events',
+      icon: Calendar,
+      path: '/admin/events',
       visible: canManageContent(user.role),
     },
     {
