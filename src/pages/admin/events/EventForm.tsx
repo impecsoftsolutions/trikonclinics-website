@@ -29,12 +29,33 @@ import {
   Tag,
   FileText,
   Sparkles,
+  Image as ImageIcon,
+  Film,
+  GripVertical,
+  Upload,
 } from 'lucide-react';
 
 interface Tag {
   id: string;
   tag_name: string;
   slug: string;
+}
+
+interface EventImage {
+  id: string;
+  image_url_small: string;
+  image_url_medium: string;
+  image_url_large: string;
+  alt_text: string | null;
+  display_order: number;
+  is_featured?: boolean;
+}
+
+interface EventVideo {
+  id: string;
+  youtube_url: string;
+  youtube_video_id: string;
+  display_order: number;
 }
 
 interface EventFormData {
@@ -113,6 +134,16 @@ export const EventForm: React.FC = () => {
 
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+
+  const [featuredImage, setFeaturedImage] = useState<EventImage | null>(null);
+  const [featuredImageAlt, setFeaturedImageAlt] = useState('');
+  const [galleryImages, setGalleryImages] = useState<EventImage[]>([]);
+  const [videos, setVideos] = useState<EventVideo[]>([]);
+  const [newVideoUrl, setNewVideoUrl] = useState('');
+  const [videoUrlError, setVideoUrlError] = useState('');
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
+  const [draggedVideoIndex, setDraggedVideoIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -234,12 +265,53 @@ export const EventForm: React.FC = () => {
 
       setOriginalSlug(event.slug);
       setIsDirty(false);
+
+      if (id) {
+        await loadMedia(id);
+      }
     } catch (err) {
       console.error('Error loading event:', err);
       error('Failed to load event');
       navigate('/admin/events/list');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMedia = async (eventId: string) => {
+    try {
+      const { data: images, error: imagesError } = await supabase
+        .from('event_images')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('display_order');
+
+      if (imagesError) throw imagesError;
+
+      if (images && images.length > 0) {
+        const featured = images.find(img => img.display_order === 0);
+        if (featured) {
+          setFeaturedImage(featured);
+          setFeaturedImageAlt(featured.alt_text || '');
+        }
+        const gallery = images.filter(img => img.display_order > 0);
+        setGalleryImages(gallery);
+      }
+
+      const { data: vids, error: videosError } = await supabase
+        .from('event_videos')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('display_order');
+
+      if (videosError) throw videosError;
+
+      if (vids) {
+        setVideos(vids);
+      }
+    } catch (err) {
+      console.error('Error loading media:', err);
+      error('Failed to load media');
     }
   };
 
@@ -352,38 +424,14 @@ export const EventForm: React.FC = () => {
         break;
 
       case 'slug':
-        if (!value || value.trim().length === 0) {
-          errorMsg = 'URL slug is required';
-        } else if (!slugValidation.isAvailable) {
+        if (!slugValidation.isAvailable) {
           errorMsg = slugValidation.error || 'Slug is not available';
         }
         break;
 
-      case 'event_date':
-        if (!value) {
-          errorMsg = 'Event date is required';
-        }
-        break;
-
-      case 'tags':
-        if (!value || value.length === 0) {
-          errorMsg = 'At least one tag is required';
-        }
-        break;
-
       case 'short_description':
-        if (!value || value.trim().length === 0) {
-          errorMsg = 'Short description is required';
-        } else if (value.length > 500) {
+        if (value && value.length > 500) {
           errorMsg = 'Short description must be 500 characters or less';
-        }
-        break;
-
-      case 'full_description':
-        if (!value || value.trim().length === 0) {
-          errorMsg = 'Full description is required';
-        } else if (value.trim().length < 50) {
-          errorMsg = 'Full description must be at least 50 characters';
         }
         break;
 
@@ -407,7 +455,7 @@ export const EventForm: React.FC = () => {
     return errorMsg;
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = (forPublish: boolean = false): boolean => {
     const errors: ValidationErrors = {};
 
     if (!formData.title || formData.title.trim().length === 0) {
@@ -416,34 +464,29 @@ export const EventForm: React.FC = () => {
       errors.title = 'Title must be 75 characters or less';
     }
 
-    if (!formData.slug || formData.slug.trim().length === 0) {
-      errors.slug = 'URL slug is required';
-    } else if (!slugValidation.isAvailable) {
+    if (!slugValidation.isAvailable) {
       errors.slug = slugValidation.error || 'Slug is not available';
     }
 
-    if (!formData.event_date) {
-      errors.event_date = 'Event date is required';
-    }
-
-    if (!formData.tags || formData.tags.length === 0) {
-      errors.tags = 'At least one tag is required';
-    }
-
-    if (!formData.short_description || formData.short_description.trim().length === 0) {
-      errors.short_description = 'Short description is required';
-    } else if (formData.short_description.length > 500) {
+    if (formData.short_description && formData.short_description.length > 500) {
       errors.short_description = 'Short description must be 500 characters or less';
-    }
-
-    if (!formData.full_description || formData.full_description.trim().length === 0) {
-      errors.full_description = 'Full description is required';
-    } else if (formData.full_description.trim().length < 50) {
-      errors.full_description = 'Full description must be at least 50 characters';
     }
 
     if (formData.venue && formData.venue.length > 200) {
       errors.venue = 'Venue must be 200 characters or less';
+    }
+
+    if (forPublish) {
+      if (!featuredImage) {
+        errors.featured_image = 'Featured image is required to publish';
+      } else if (!featuredImageAlt || featuredImageAlt.trim().length === 0) {
+        errors.featured_image_alt = 'Featured image ALT text is required to publish';
+      }
+
+      const imagesWithoutAlt = galleryImages.filter(img => !img.alt_text || img.alt_text.trim().length === 0);
+      if (imagesWithoutAlt.length > 0) {
+        errors.gallery_alt = `${imagesWithoutAlt.length} gallery image(s) missing ALT text`;
+      }
     }
 
     setValidationErrors(errors);
@@ -542,6 +585,22 @@ export const EventForm: React.FC = () => {
         }
       }
 
+      if (eventId) {
+        if (featuredImage && featuredImageAlt !== (featuredImage.alt_text || '')) {
+          await supabase
+            .from('event_images')
+            .update({ alt_text: featuredImageAlt })
+            .eq('id', featuredImage.id);
+        }
+
+        for (const galleryImage of galleryImages) {
+          await supabase
+            .from('event_images')
+            .update({ alt_text: galleryImage.alt_text })
+            .eq('id', galleryImage.id);
+        }
+      }
+
       setIsDirty(false);
       setLastSaved(new Date());
 
@@ -570,8 +629,218 @@ export const EventForm: React.FC = () => {
     }
   };
 
+  const handleFeaturedImageUpload = async (file: File) => {
+    if (!id) {
+      error('Please save the event first before uploading images');
+      return;
+    }
+
+    setUploadingMedia(true);
+    try {
+      const { uploadEventImage } = await import('../../../utils/eventImageUpload');
+      const result = await uploadEventImage(file, id, formData.slug, featuredImageAlt, 0);
+
+      if (result.success && result.imageId && result.urls) {
+        setFeaturedImage({
+          id: result.imageId,
+          image_url_small: result.urls.small,
+          image_url_medium: result.urls.medium,
+          image_url_large: result.urls.large,
+          alt_text: featuredImageAlt,
+          display_order: 0,
+        });
+        setIsDirty(true);
+        success('Featured image uploaded successfully');
+      } else {
+        error(result.error || 'Failed to upload featured image');
+      }
+    } catch (err) {
+      console.error('Featured image upload error:', err);
+      error('Failed to upload featured image');
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  const handleRemoveFeaturedImage = async () => {
+    if (!featuredImage || !id) return;
+
+    if (!confirm('Remove featured image?')) return;
+
+    setUploadingMedia(true);
+    try {
+      const { deleteEventImage } = await import('../../../utils/eventImageUpload');
+      const deleted = await deleteEventImage(featuredImage.id, id);
+
+      if (deleted) {
+        setFeaturedImage(null);
+        setFeaturedImageAlt('');
+        setIsDirty(true);
+        success('Featured image removed');
+      } else {
+        error('Failed to remove featured image');
+      }
+    } catch (err) {
+      console.error('Error removing featured image:', err);
+      error('Failed to remove featured image');
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  const handleGalleryImagesUpload = async (files: File[]) => {
+    if (!id) {
+      error('Please save the event first before uploading images');
+      return;
+    }
+
+    if (galleryImages.length + files.length > 25) {
+      error(`Can only upload ${25 - galleryImages.length} more image(s). Maximum 25 gallery images.`);
+      return;
+    }
+
+    setUploadingMedia(true);
+    try {
+      const { uploadEventImages } = await import('../../../utils/eventImageUpload');
+      const results = await uploadEventImages(files, id, formData.slug);
+
+      const successfulUploads = results.filter(r => r.success);
+      if (successfulUploads.length > 0) {
+        await loadMedia(id);
+        setIsDirty(true);
+        success(`${successfulUploads.length} image(s) uploaded successfully`);
+      }
+
+      const failures = results.filter(r => !r.success);
+      if (failures.length > 0) {
+        error(`${failures.length} image(s) failed to upload`);
+      }
+    } catch (err) {
+      console.error('Gallery upload error:', err);
+      error('Failed to upload gallery images');
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  const handleRemoveGalleryImage = async (imageId: string) => {
+    if (!id) return;
+
+    if (!confirm('Remove this image?')) return;
+
+    setUploadingMedia(true);
+    try {
+      const { deleteEventImage } = await import('../../../utils/eventImageUpload');
+      const deleted = await deleteEventImage(imageId, id);
+
+      if (deleted) {
+        setGalleryImages(prev => prev.filter(img => img.id !== imageId));
+        setIsDirty(true);
+        success('Image removed');
+      } else {
+        error('Failed to remove image');
+      }
+    } catch (err) {
+      console.error('Error removing image:', err);
+      error('Failed to remove image');
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  const handleGalleryImageAltChange = (imageId: string, altText: string) => {
+    setGalleryImages(prev =>
+      prev.map(img => (img.id === imageId ? { ...img, alt_text: altText } : img))
+    );
+    setIsDirty(true);
+  };
+
+  const handleAddVideo = async () => {
+    if (!id) {
+      error('Please save the event first before adding videos');
+      return;
+    }
+
+    if (videos.length >= 10) {
+      error('Maximum 10 videos per event');
+      return;
+    }
+
+    if (!newVideoUrl.trim()) {
+      setVideoUrlError('Please enter a YouTube URL');
+      return;
+    }
+
+    const { extractYouTubeVideoId, isValidYouTubeUrl } = await import('../../../constants/events');
+
+    if (!isValidYouTubeUrl(newVideoUrl)) {
+      setVideoUrlError('Please enter a valid YouTube URL');
+      return;
+    }
+
+    const videoId = extractYouTubeVideoId(newVideoUrl);
+    if (!videoId) {
+      setVideoUrlError('Could not extract video ID from URL');
+      return;
+    }
+
+    setUploadingMedia(true);
+    try {
+      const { data, error: insertError } = await supabase
+        .from('event_videos')
+        .insert({
+          event_id: id,
+          youtube_url: newVideoUrl,
+          youtube_video_id: videoId,
+          display_order: videos.length,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      if (data) {
+        setVideos(prev => [...prev, data]);
+        setNewVideoUrl('');
+        setVideoUrlError('');
+        setIsDirty(true);
+        success('Video added successfully');
+      }
+    } catch (err) {
+      console.error('Error adding video:', err);
+      error('Failed to add video');
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  const handleRemoveVideo = async (videoId: string) => {
+    if (!id) return;
+
+    if (!confirm('Remove this video?')) return;
+
+    setUploadingMedia(true);
+    try {
+      const { error: deleteError } = await supabase
+        .from('event_videos')
+        .delete()
+        .eq('id', videoId);
+
+      if (deleteError) throw deleteError;
+
+      setVideos(prev => prev.filter(v => v.id !== videoId));
+      setIsDirty(true);
+      success('Video removed');
+    } catch (err) {
+      console.error('Error removing video:', err);
+      error('Failed to remove video');
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
   const handleSaveDraft = async () => {
-    if (!validateForm()) {
+    if (!validateForm(false)) {
       error('Please fix validation errors before saving');
       const firstError = Object.keys(validationErrors)[0];
       document.getElementById(firstError)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -582,7 +851,7 @@ export const EventForm: React.FC = () => {
   };
 
   const handlePublish = async () => {
-    if (!validateForm()) {
+    if (!validateForm(true)) {
       error('Please fix validation errors before publishing');
       const firstError = Object.keys(validationErrors)[0];
       document.getElementById(firstError)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -736,18 +1005,16 @@ export const EventForm: React.FC = () => {
             {/* Slug */}
             <div>
               <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-2">
-                URL Slug <span className="text-red-500">*</span>
+                URL Slug
               </label>
               <input
                 id="slug"
                 type="text"
                 value={formData.slug}
-                onChange={(e) => handleSlugChange(e.target.value)}
-                onBlur={() => handleFieldBlur('slug')}
-                placeholder="event-url-slug"
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  validationErrors.slug ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
+                readOnly
+                disabled
+                placeholder="auto-generated-from-title"
+                className="w-full px-4 py-2.5 border rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
               />
               <div className="mt-1">
                 {checkingSlug && (
@@ -793,7 +1060,7 @@ export const EventForm: React.FC = () => {
               {/* Event Date */}
               <div>
                 <label htmlFor="event_date" className="block text-sm font-medium text-gray-700 mb-2">
-                  Event Date <span className="text-red-500">*</span>
+                  Event Date (optional)
                 </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -870,7 +1137,7 @@ export const EventForm: React.FC = () => {
             {/* Tags */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tags <span className="text-red-500">*</span>
+                Tags (optional)
               </label>
               {tagsLoading ? (
                 <div className="flex items-center gap-2 text-gray-500">
@@ -939,7 +1206,7 @@ export const EventForm: React.FC = () => {
               {/* Status */}
               <div>
                 <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
-                  Status <span className="text-red-500">*</span>
+                  Status
                 </label>
                 <select
                   id="status"
@@ -990,7 +1257,7 @@ export const EventForm: React.FC = () => {
             {/* Short Description */}
             <div>
               <label htmlFor="short_description" className="block text-sm font-medium text-gray-700 mb-2">
-                Short Description <span className="text-red-500">*</span>
+                Short Description (optional)
               </label>
               <textarea
                 id="short_description"
@@ -1025,7 +1292,7 @@ export const EventForm: React.FC = () => {
             {/* Full Description */}
             <div>
               <label htmlFor="full_description" className="block text-sm font-medium text-gray-700 mb-2">
-                Full Description <span className="text-red-500">*</span>
+                Full Description (optional)
               </label>
               <textarea
                 id="full_description"
@@ -1108,30 +1375,303 @@ export const EventForm: React.FC = () => {
           </div>
         </div>
 
-        {/* Section 3: Media Placeholder */}
+        {/* Section 3: Media */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-purple-600" />
+              <ImageIcon className="w-5 h-5 text-purple-600" />
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-800">Media</h2>
-              <p className="text-sm text-gray-500">Photos and videos</p>
+              <p className="text-sm text-gray-500">Featured image, gallery photos, and videos</p>
             </div>
           </div>
 
-          <div className="text-center py-12 px-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <Sparkles className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">
-              Media Upload Available After Saving
-            </h3>
-            <p className="text-gray-600 mb-1">
-              Save this event first, then you can add photos and videos from the edit page
-            </p>
-            <p className="text-sm text-gray-500">
-              Photo and video upload will be available in Phase 4
-            </p>
-          </div>
+          {!id ? (
+            <div className="text-center py-12 px-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <ImageIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                Save Event to Upload Media
+              </h3>
+              <p className="text-gray-600">
+                Please save this event first, then you can add photos and videos
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {validationErrors.featured_image && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {validationErrors.featured_image}
+                  </p>
+                </div>
+              )}
+
+              {validationErrors.featured_image_alt && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {validationErrors.featured_image_alt}
+                  </p>
+                </div>
+              )}
+
+              {validationErrors.gallery_alt && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {validationErrors.gallery_alt}
+                  </p>
+                </div>
+              )}
+
+              {/* Featured Image */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Featured Image <span className="text-red-500">*</span> (required to publish)
+                </label>
+                <p className="text-xs text-gray-500 mb-3">
+                  This image appears on event cards and at the top of the event page
+                </p>
+
+                {!featuredImage ? (
+                  <div>
+                    <label className="block cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFeaturedImageUpload(file);
+                          e.target.value = '';
+                        }}
+                        className="hidden"
+                        disabled={uploadingMedia}
+                      />
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                        <div className="text-center">
+                          <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                          <p className="text-sm text-gray-600 font-medium mb-1">
+                            Click to upload featured image
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            JPG, PNG, or WebP • Max 10MB
+                          </p>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="relative inline-block">
+                      <img
+                        src={featuredImage.image_url_medium}
+                        alt={featuredImageAlt || 'Featured image'}
+                        className="w-full max-w-md rounded-lg border border-gray-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveFeaturedImage}
+                        disabled={uploadingMedia}
+                        className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors disabled:opacity-50"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        ALT Text <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={featuredImageAlt}
+                        onChange={(e) => {
+                          setFeaturedImageAlt(e.target.value);
+                          setIsDirty(true);
+                        }}
+                        placeholder="Describe this image (recommended 125 characters)"
+                        maxLength={200}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        {featuredImageAlt.length} / 200 characters
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Photo Gallery */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Photo Gallery (Optional)
+                  </label>
+                  <span className="text-sm text-gray-500">
+                    {galleryImages.length} / 25 images
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  Add up to 25 images for this event
+                </p>
+
+                {galleryImages.length < 25 && (
+                  <div className="mb-4">
+                    <label className="block cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (files.length > 0) handleGalleryImagesUpload(files);
+                          e.target.value = '';
+                        }}
+                        className="hidden"
+                        disabled={uploadingMedia}
+                      />
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                        <div className="text-center">
+                          <Upload className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-600 font-medium">
+                            Click to upload gallery images
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Select multiple files • JPG, PNG, or WebP • Max 10MB each
+                          </p>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                )}
+
+                {galleryImages.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {galleryImages.map((image) => (
+                      <div key={image.id} className="relative group">
+                        <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                          <img
+                            src={image.image_url_small}
+                            alt={image.alt_text || 'Gallery image'}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveGalleryImage(image.id)}
+                          disabled={uploadingMedia}
+                          className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 disabled:opacity-50"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <div className="mt-2">
+                          <input
+                            type="text"
+                            value={image.alt_text || ''}
+                            onChange={(e) => handleGalleryImageAltChange(image.id, e.target.value)}
+                            placeholder="ALT text (required to publish)"
+                            maxLength={200}
+                            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                          <p className="text-xs text-gray-400 mt-1">
+                            {(image.alt_text || '').length} / 200
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* YouTube Videos */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    YouTube Videos (Optional)
+                  </label>
+                  <span className="text-sm text-gray-500">
+                    {videos.length} / 10 videos
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  Add up to 10 YouTube video links
+                </p>
+
+                {videos.length < 10 && (
+                  <div className="mb-4">
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <input
+                          type="url"
+                          value={newVideoUrl}
+                          onChange={(e) => {
+                            setNewVideoUrl(e.target.value);
+                            setVideoUrlError('');
+                          }}
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                            videoUrlError ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                          }`}
+                        />
+                        {videoUrlError && (
+                          <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                            <AlertCircle className="w-4 h-4" />
+                            {videoUrlError}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddVideo}
+                        disabled={uploadingMedia || !newVideoUrl.trim()}
+                        className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Accepts: youtube.com/watch?v=, youtu.be/, or youtube.com/embed/ URLs
+                    </p>
+                  </div>
+                )}
+
+                {videos.length > 0 && (
+                  <div className="space-y-3">
+                    {videos.map((video) => (
+                      <div key={video.id} className="flex items-start gap-4 p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
+                        <div className="flex-shrink-0">
+                          <img
+                            src={`https://img.youtube.com/vi/${video.youtube_video_id}/mqdefault.jpg`}
+                            alt="Video thumbnail"
+                            className="w-32 h-20 object-cover rounded"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-600 font-mono truncate">
+                            {video.youtube_url}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Video ID: {video.youtube_video_id}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveVideo(video.id)}
+                          disabled={uploadingMedia}
+                          className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </form>
 
