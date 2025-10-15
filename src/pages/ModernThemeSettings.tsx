@@ -1,24 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Sparkles, Plus, Loader2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import type { ModernTheme, ActiveThemeInfo, ThemeConfig } from '../types/modernTheme';
-import {
-  loadAllThemes,
-  loadActiveTheme,
-  activateTheme,
-  rollbackTheme,
-  duplicateTheme,
-  deleteTheme,
-  updateTheme,
-} from '../lib/modernThemeService';
-import { supabase } from '../lib/supabase';
-import { ThemeCard } from '../components/modern-themes/ThemeCard';
-import { ActiveThemeHeader } from '../components/modern-themes/ActiveThemeHeader';
-import { LoadingSkeleton } from '../components/modern-themes/LoadingSkeleton';
-import { ThemePreviewModal } from '../components/modern-themes/ThemePreviewModal';
-import { DuplicateThemeModal } from '../components/modern-themes/DuplicateThemeModal';
-import { ConfirmDialog } from '../components/modern-themes/ConfirmDialog';
-import { ThemeEditModal } from '../components/modern-themes/ThemeEditModal';
+import { Sparkles, Loader2, Eye, Calendar, User, Hash, Check } from 'lucide-react';
+import type { ActiveThemeInfo } from '../types/modernTheme';
+import { loadActiveTheme } from '../lib/modernThemeService';
+import { ColorSwatch } from '../components/modern-themes/ColorSwatch';
 
 interface Message {
   type: 'success' | 'error';
@@ -26,37 +10,9 @@ interface Message {
 }
 
 export const ModernThemeSettings: React.FC = () => {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [themes, setThemes] = useState<ModernTheme[]>([]);
   const [activeTheme, setActiveTheme] = useState<ActiveThemeInfo | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [message, setMessage] = useState<Message | null>(null);
-
-  const [previewModalOpen, setPreviewModalOpen] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState<ModernTheme | null>(null);
-
-  const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
-  const [themeToDuplicate, setThemeToDuplicate] = useState<ModernTheme | null>(null);
-  const [duplicating, setDuplicating] = useState(false);
-
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [themeToDelete, setThemeToDelete] = useState<ModernTheme | null>(null);
-  const [deleting, setDeleting] = useState(false);
-
-  const [activateDialogOpen, setActivateDialogOpen] = useState(false);
-  const [themeToActivate, setThemeToActivate] = useState<ModernTheme | null>(null);
-  const [activating, setActivating] = useState(false);
-
-  const [rollbackDialogOpen, setRollbackDialogOpen] = useState(false);
-  const [rollingBack, setRollingBack] = useState(false);
-
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [themeToEdit, setThemeToEdit] = useState<ModernTheme | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  const canManage = user?.role === 'Super Admin' || user?.role === 'Admin';
-  const isSuperAdmin = user?.role === 'Super Admin';
 
   useEffect(() => {
     loadData();
@@ -70,305 +26,71 @@ export const ModernThemeSettings: React.FC = () => {
   }, [message]);
 
   const loadData = async () => {
-    console.log('[Modern Themes]', 'Loading themes and active theme data');
+    console.log('[Modern Themes]', 'Loading active theme data');
     setLoading(true);
 
     try {
-      const [themesResult, activeResult] = await Promise.all([
-        loadAllThemes(),
-        loadActiveTheme(),
-      ]);
-
-      if (themesResult.error) {
-        setMessage({ type: 'error', text: themesResult.error });
-        console.error('[Modern Themes]', 'Error loading themes:', themesResult.error);
-      } else {
-        setThemes(themesResult.data || []);
-        console.log('[Modern Themes]', `Loaded ${themesResult.data?.length || 0} themes`);
-      }
+      const activeResult = await loadActiveTheme();
 
       if (activeResult.error) {
         console.error('[Modern Themes]', 'Error loading active theme:', activeResult.error);
+        setMessage({ type: 'error', text: activeResult.error });
       } else {
         setActiveTheme(activeResult.data);
         console.log('[Modern Themes]', 'Active theme:', activeResult.data?.name || 'None');
       }
     } catch (error) {
       console.error('[Modern Themes]', 'Unexpected error loading data:', error);
-      setMessage({ type: 'error', text: 'Failed to load themes. Please refresh the page.' });
+      setMessage({ type: 'error', text: 'Failed to load theme. Please refresh the page.' });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleActivate = (themeId: string) => {
-    const theme = themes.find((t) => t.id === themeId);
-    if (theme) {
-      setThemeToActivate(theme);
-      setActivateDialogOpen(true);
-    }
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
-  const confirmActivate = async () => {
-    if (!themeToActivate || !user) return;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading theme settings...</p>
+        </div>
+      </div>
+    );
+  }
 
-    console.log('[Modern Themes]', 'Activating theme:', themeToActivate.name);
-    setActivating(true);
+  if (!activeTheme) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <Sparkles className="w-8 h-8 text-blue-600" />
+              <h1 className="text-3xl font-bold text-gray-900">Modern Themes</h1>
+            </div>
+          </div>
 
-    try {
-      const response = await activateTheme(themeToActivate.id, user.id);
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <Sparkles className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Theme</h3>
+            <p className="text-gray-600">Contact your administrator to activate a theme.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-      if (response.success) {
-        console.log('[Modern Themes]', 'Theme activated successfully');
-        setMessage({
-          type: 'success',
-          text: `Theme activated successfully! You can rollback within 24 hours if needed.`,
-        });
-
-        await supabase.from('activity_logs').insert({
-          user_id: user.id,
-          action: 'theme_activated',
-          description: `Activated modern theme: ${themeToActivate.name}`,
-          table_affected: 'modern_themes',
-          record_id: themeToActivate.id,
-        });
-
-        await loadData();
-      } else {
-        console.error('[Modern Themes]', 'Activation failed:', response.error);
-        setMessage({ type: 'error', text: response.error || 'Failed to activate theme' });
-      }
-    } catch (error) {
-      console.error('[Modern Themes]', 'Unexpected error activating theme:', error);
-      setMessage({ type: 'error', text: 'An unexpected error occurred' });
-    } finally {
-      setActivating(false);
-      setActivateDialogOpen(false);
-      setThemeToActivate(null);
-    }
-  };
-
-  const handleRollback = () => {
-    setRollbackDialogOpen(true);
-  };
-
-  const confirmRollback = async () => {
-    if (!user) return;
-
-    console.log('[Modern Themes]', 'Rolling back to previous theme');
-    setRollingBack(true);
-
-    try {
-      const response = await rollbackTheme(user.id);
-
-      if (response.success) {
-        console.log('[Modern Themes]', 'Rollback successful');
-        setMessage({ type: 'success', text: response.message || 'Theme rolled back successfully!' });
-
-        await supabase.from('activity_logs').insert({
-          user_id: user.id,
-          action: 'theme_rolled_back',
-          description: 'Rolled back to previous modern theme',
-          table_affected: 'modern_themes',
-          record_id: null,
-        });
-
-        await loadData();
-      } else {
-        console.error('[Modern Themes]', 'Rollback failed:', response.error);
-        setMessage({ type: 'error', text: response.error || 'Failed to rollback theme' });
-      }
-    } catch (error) {
-      console.error('[Modern Themes]', 'Unexpected error rolling back:', error);
-      setMessage({ type: 'error', text: 'An unexpected error occurred' });
-    } finally {
-      setRollingBack(false);
-      setRollbackDialogOpen(false);
-    }
-  };
-
-  const handleViewDetails = (theme: ModernTheme) => {
-    setSelectedTheme(theme);
-    setPreviewModalOpen(true);
-  };
-
-  const handleDuplicate = (theme: ModernTheme) => {
-    setThemeToDuplicate(theme);
-    setDuplicateModalOpen(true);
-  };
-
-  const confirmDuplicate = async (newName: string, newSlug: string) => {
-    if (!themeToDuplicate || !user) return;
-
-    console.log('[Modern Themes]', 'Duplicating theme:', themeToDuplicate.name, 'as:', newName);
-    setDuplicating(true);
-
-    try {
-      const response = await duplicateTheme(themeToDuplicate.id, newName, newSlug, user.id);
-
-      if (response.success) {
-        console.log('[Modern Themes]', 'Theme duplicated successfully');
-        setMessage({ type: 'success', text: `Theme duplicated successfully as "${newName}"` });
-
-        await supabase.from('activity_logs').insert({
-          user_id: user.id,
-          action: 'theme_duplicated',
-          description: `Duplicated modern theme: ${themeToDuplicate.name} as ${newName}`,
-          table_affected: 'modern_themes',
-          record_id: response.theme_id,
-        });
-
-        await loadData();
-      } else {
-        console.error('[Modern Themes]', 'Duplication failed:', response.error);
-        setMessage({ type: 'error', text: response.error || 'Failed to duplicate theme' });
-      }
-    } catch (error) {
-      console.error('[Modern Themes]', 'Unexpected error duplicating theme:', error);
-      setMessage({ type: 'error', text: 'An unexpected error occurred' });
-    } finally {
-      setDuplicating(false);
-      setDuplicateModalOpen(false);
-      setThemeToDuplicate(null);
-    }
-  };
-
-  const handleEdit = (theme: ModernTheme) => {
-    if (!isSuperAdmin) {
-      setMessage({
-        type: 'error',
-        text: 'Only Super Admins can edit themes.',
-      });
-      return;
-    }
-
-    if (theme.is_preset) {
-      setMessage({
-        type: 'error',
-        text: 'Preset themes cannot be edited. Please duplicate this theme to create an editable version.',
-      });
-      return;
-    }
-
-    console.log('[Modern Themes]', 'Opening edit modal for theme:', theme.name);
-    setThemeToEdit(theme);
-    setEditModalOpen(true);
-  };
-
-  const handleSaveEdit = async (config: ThemeConfig, changeDescription: string) => {
-    if (!themeToEdit || !user) return;
-
-    console.log('[Modern Themes]', 'Saving theme edits:', themeToEdit.name);
-    setSaving(true);
-
-    try {
-      const response = await updateTheme(themeToEdit.id, config, changeDescription, user.id);
-
-      if (response.success) {
-        console.log('[Modern Themes]', 'Theme updated successfully, version:', response.version_number);
-        setMessage({
-          type: 'success',
-          text: `Theme "${themeToEdit.name}" updated successfully! Version ${response.version_number} created.`,
-        });
-
-        await supabase.from('activity_logs').insert({
-          user_id: user.id,
-          action: 'theme_edited',
-          description: `Updated modern theme: ${themeToEdit.name} - ${changeDescription}`,
-          table_affected: 'modern_themes',
-          record_id: themeToEdit.id,
-        });
-
-        // Fetch the updated theme data from the database
-        const { data: updatedTheme, error: fetchError } = await supabase
-          .from('modern_themes')
-          .select('*')
-          .eq('id', themeToEdit.id)
-          .maybeSingle();
-
-        if (!fetchError && updatedTheme) {
-          // Update the themeToEdit state with fresh data
-          setThemeToEdit(updatedTheme as ModernTheme);
-          console.log('[Modern Themes]', 'Theme data refreshed with version:', updatedTheme.version_number);
-        }
-
-        // Refresh the theme list in the background
-        await loadData();
-
-        // DO NOT close the modal - keep it open for activation
-      } else {
-        console.error('[Modern Themes]', 'Update failed:', response.error);
-        setMessage({ type: 'error', text: response.error || 'Failed to update theme' });
-      }
-    } catch (error) {
-      console.error('[Modern Themes]', 'Unexpected error updating theme:', error);
-      setMessage({ type: 'error', text: 'An unexpected error occurred' });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = (theme: ModernTheme) => {
-    if (theme.id === activeTheme?.id) {
-      setMessage({
-        type: 'error',
-        text: 'Cannot delete the currently active theme. Please activate another theme first.',
-      });
-      return;
-    }
-
-    setThemeToDelete(theme);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!themeToDelete || !user) return;
-
-    console.log('[Modern Themes]', 'Deleting theme:', themeToDelete.name);
-    setDeleting(true);
-
-    try {
-      const response = await deleteTheme(themeToDelete.id);
-
-      if (response.success) {
-        console.log('[Modern Themes]', 'Theme deleted successfully');
-        setMessage({ type: 'success', text: 'Theme deleted successfully' });
-
-        await supabase.from('activity_logs').insert({
-          user_id: user.id,
-          action: 'theme_deleted',
-          description: `Deleted modern theme: ${themeToDelete.name}`,
-          table_affected: 'modern_themes',
-          record_id: themeToDelete.id,
-        });
-
-        await loadData();
-      } else {
-        console.error('[Modern Themes]', 'Deletion failed:', response.error);
-        setMessage({ type: 'error', text: response.error || 'Failed to delete theme' });
-      }
-    } catch (error) {
-      console.error('[Modern Themes]', 'Unexpected error deleting theme:', error);
-      setMessage({ type: 'error', text: 'An unexpected error occurred' });
-    } finally {
-      setDeleting(false);
-      setDeleteDialogOpen(false);
-      setThemeToDelete(null);
-    }
-  };
-
-  const filteredThemes = themes.filter((theme) =>
-    theme.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    theme.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const sortedThemes = [...filteredThemes].sort((a, b) => {
-    if (a.id === activeTheme?.id) return -1;
-    if (b.id === activeTheme?.id) return 1;
-    if (a.is_preset && !b.is_preset) return -1;
-    if (!a.is_preset && b.is_preset) return 1;
-    return a.name.localeCompare(b.name);
-  });
+  const config = activeTheme.config;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -378,16 +100,14 @@ export const ModernThemeSettings: React.FC = () => {
             <Sparkles className="w-8 h-8 text-blue-600" />
             <h1 className="text-3xl font-bold text-gray-900">Modern Themes</h1>
           </div>
-          <p className="text-gray-600">
-            Browse, preview, and activate modern themes for your hospital website.
+          <p className="text-gray-600">View current theme configuration and settings.</p>
+        </div>
+
+        <div className="mb-6 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+          <Eye className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-blue-800 font-medium">
+            Theme settings are currently view-only. Contact your administrator to make changes.
           </p>
-          {!canManage && (
-            <div className="mt-3 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                You have view-only access. Contact an administrator to manage themes.
-              </p>
-            </div>
-          )}
         </div>
 
         {message && (
@@ -402,146 +122,433 @@ export const ModernThemeSettings: React.FC = () => {
           </div>
         )}
 
-        <ActiveThemeHeader
-          activeTheme={activeTheme}
-          canManage={canManage}
-          onRollback={handleRollback}
-        />
-
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="relative flex-1 w-full md:max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search themes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+        <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <h2 className="text-2xl font-bold text-gray-900">{activeTheme.name}</h2>
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
+                  <Check className="w-4 h-4" />
+                  Active Theme
+                </span>
+              </div>
+              <p className="text-gray-600">{activeTheme.description}</p>
             </div>
-            <button
-              disabled
-              className="w-full md:w-auto px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed flex items-center gap-2 justify-center"
-              title="Coming in Phase 4"
-            >
-              <Plus className="w-4 h-4" />
-              Create New Theme
-            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200">
+            <div className="flex items-start gap-3">
+              <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
+              <div>
+                <p className="text-xs text-gray-500 font-medium mb-1">Activated On</p>
+                <p className="text-sm text-gray-900">{formatDate(activeTheme.activated_at)}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
+              <div>
+                <p className="text-xs text-gray-500 font-medium mb-1">Last Updated</p>
+                <p className="text-sm text-gray-900">{formatDate(activeTheme.updated_at)}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <User className="w-5 h-5 text-gray-400 mt-0.5" />
+              <div>
+                <p className="text-xs text-gray-500 font-medium mb-1">Type</p>
+                <p className="text-sm text-gray-900">{activeTheme.is_preset ? 'Preset Theme' : 'Custom Theme'}</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Hash className="w-5 h-5 text-gray-400 mt-0.5" />
+              <div>
+                <p className="text-xs text-gray-500 font-medium mb-1">Validation</p>
+                <p className="text-sm text-gray-900 capitalize">{activeTheme.validation_status}</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {loading ? (
-          <LoadingSkeleton />
-        ) : sortedThemes.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <Sparkles className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {searchQuery ? 'No themes found' : 'No themes available'}
-            </h3>
-            <p className="text-gray-600">
-              {searchQuery
-                ? 'No themes found matching your criteria. Try adjusting your search.'
-                : 'Contact administrator to set up themes.'}
-            </p>
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Color Palette</h3>
+
+            <div className="space-y-6">
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Primary Colors</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <ColorSwatch color={config.colors.light.primary} label="Primary" size="lg" />
+                  <ColorSwatch color={config.colors.light.secondary} label="Secondary" size="lg" />
+                  <ColorSwatch color={config.colors.light.accent} label="Accent" size="lg" />
+                  {config.colors.light.decorativeIcon && (
+                    <ColorSwatch color={config.colors.light.decorativeIcon} label="Decorative Icon" size="lg" />
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Background Colors</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <ColorSwatch color={config.colors.light.background.page} label="Page" size="lg" />
+                  <ColorSwatch color={config.colors.light.background.surface} label="Surface" size="lg" />
+                  <ColorSwatch color={config.colors.light.background.elevated} label="Elevated" size="lg" />
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Text Colors</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <ColorSwatch color={config.colors.light.text.primary} label="Primary Text" size="lg" />
+                  <ColorSwatch color={config.colors.light.text.secondary} label="Secondary Text" size="lg" />
+                  <ColorSwatch color={config.colors.light.text.muted} label="Muted Text" size="lg" />
+                  <ColorSwatch color={config.colors.light.text.inverse} label="Inverse Text" size="lg" />
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Semantic Colors</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <ColorSwatch color={config.colors.light.semantic.success} label="Success" size="lg" />
+                  <ColorSwatch color={config.colors.light.semantic.warning} label="Warning" size="lg" />
+                  <ColorSwatch color={config.colors.light.semantic.error} label="Error" size="lg" />
+                  <ColorSwatch color={config.colors.light.semantic.info} label="Info" size="lg" />
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Border Colors</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <ColorSwatch color={config.colors.light.border.default} label="Default" size="lg" />
+                  <ColorSwatch color={config.colors.light.border.hover} label="Hover" size="lg" />
+                  <ColorSwatch color={config.colors.light.border.focus} label="Focus" size="lg" />
+                </div>
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedThemes.map((theme) => (
-              <ThemeCard
-                key={theme.id}
-                theme={theme}
-                isActive={theme.id === activeTheme?.id}
-                canManage={canManage}
-                isSuperAdmin={isSuperAdmin}
-                onActivate={handleActivate}
-                onViewDetails={handleViewDetails}
-                onEdit={handleEdit}
-                onDuplicate={handleDuplicate}
-                onDelete={handleDelete}
-              />
-            ))}
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Typography</h3>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 font-medium mb-2">Heading Font</p>
+                  <p className="text-sm text-gray-900 font-medium">{config.typography.fontFamilies.heading}</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 font-medium mb-2">Body Font</p>
+                  <p className="text-sm text-gray-900">{config.typography.fontFamilies.body}</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 font-medium mb-2">Mono Font</p>
+                  <p className="text-sm text-gray-900 font-mono">{config.typography.fontFamilies.mono}</p>
+                </div>
+              </div>
+
+              {config.layoutTypography && (
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 font-medium mb-3">Heading Sizes</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <p className="text-xs text-gray-500">H1</p>
+                      <p className="text-sm text-gray-900">{config.layoutTypography.headingSizes.h1}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">H2</p>
+                      <p className="text-sm text-gray-900">{config.layoutTypography.headingSizes.h2}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">H3</p>
+                      <p className="text-sm text-gray-900">{config.layoutTypography.headingSizes.h3}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        )}
 
-        <ThemePreviewModal
-          isOpen={previewModalOpen}
-          theme={selectedTheme}
-          canManage={canManage}
-          isActive={selectedTheme?.id === activeTheme?.id}
-          onClose={() => {
-            setPreviewModalOpen(false);
-            setSelectedTheme(null);
-          }}
-          onActivate={handleActivate}
-        />
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Layout Configuration</h3>
 
-        <DuplicateThemeModal
-          isOpen={duplicateModalOpen}
-          originalName={themeToDuplicate?.name || ''}
-          onConfirm={confirmDuplicate}
-          onCancel={() => {
-            setDuplicateModalOpen(false);
-            setThemeToDuplicate(null);
-          }}
-          isLoading={duplicating}
-        />
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 font-medium mb-2">Layout Style</p>
+                  <p className="text-sm text-gray-900 capitalize">{config.layoutStyle || 'Modern'}</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 font-medium mb-2">Navigation Style</p>
+                  <p className="text-sm text-gray-900 capitalize">{config.layouts.navigation.style}</p>
+                </div>
+              </div>
 
-        <ConfirmDialog
-          isOpen={activateDialogOpen}
-          title="Activate Theme"
-          message={`Are you sure you want to activate "${themeToActivate?.name}"?\n\nThis will change the appearance of the entire website. You can rollback within 24 hours if needed.`}
-          confirmText="Activate"
-          cancelText="Cancel"
-          confirmVariant="primary"
-          onConfirm={confirmActivate}
-          onCancel={() => {
-            setActivateDialogOpen(false);
-            setThemeToActivate(null);
-          }}
-          isLoading={activating}
-        />
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 font-medium mb-3">Hero Layout</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Layout</p>
+                    <p className="text-sm text-gray-900 capitalize">{config.layouts.hero.layout}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Image Position</p>
+                    <p className="text-sm text-gray-900 capitalize">{config.layouts.hero.imagePosition}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Text Align</p>
+                    <p className="text-sm text-gray-900 capitalize">{config.layouts.hero.textAlign}</p>
+                  </div>
+                </div>
+              </div>
 
-        <ConfirmDialog
-          isOpen={deleteDialogOpen}
-          title="Delete Theme"
-          message={`Are you sure you want to delete "${themeToDelete?.name}"?\n\nThis action cannot be undone.`}
-          confirmText="Delete"
-          cancelText="Cancel"
-          confirmVariant="danger"
-          onConfirm={confirmDelete}
-          onCancel={() => {
-            setDeleteDialogOpen(false);
-            setThemeToDelete(null);
-          }}
-          isLoading={deleting}
-        />
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 font-medium mb-3">Page Layouts</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Doctors</p>
+                    <p className="text-sm text-gray-900 capitalize">{config.layouts.pages.doctors.layout}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Services</p>
+                    <p className="text-sm text-gray-900 capitalize">{config.layouts.pages.services.layout}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Testimonials</p>
+                    <p className="text-sm text-gray-900 capitalize">{config.layouts.pages.testimonials.layout}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Contact</p>
+                    <p className="text-sm text-gray-900 capitalize">{config.layouts.pages.contact.layout}</p>
+                  </div>
+                </div>
+              </div>
 
-        <ConfirmDialog
-          isOpen={rollbackDialogOpen}
-          title="Rollback to Previous Theme"
-          message="Rollback to the theme that was active before the current one?\n\nThis will restore the previous theme's appearance immediately."
-          confirmText="Rollback"
-          cancelText="Cancel"
-          confirmVariant="primary"
-          onConfirm={confirmRollback}
-          onCancel={() => setRollbackDialogOpen(false)}
-          isLoading={rollingBack}
-        />
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 font-medium mb-3">Card Settings</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Border Radius</p>
+                    <p className="text-sm text-gray-900">{config.layouts.cards.radius}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Shadow</p>
+                    <p className="text-sm text-gray-900">{config.layouts.cards.shadow}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Padding</p>
+                    <p className="text-sm text-gray-900">{config.layouts.cards.padding}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Hover Effect</p>
+                    <p className="text-sm text-gray-900 capitalize">{config.layouts.cards.hoverEffect}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        <ThemeEditModal
-          isOpen={editModalOpen}
-          theme={themeToEdit}
-          onClose={() => {
-            setEditModalOpen(false);
-            setThemeToEdit(null);
-          }}
-          onSave={handleSaveEdit}
-          isSaving={saving}
-          isActive={themeToEdit?.id === activeTheme?.id}
-          userId={user?.id}
-          onActivationSuccess={loadData}
-        />
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Design Tokens</h3>
+
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 font-medium mb-3">Border Radius</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {Object.entries(config.designTokens.borderRadius).map(([key, value]) => (
+                    <div key={key}>
+                      <p className="text-xs text-gray-500">{key}</p>
+                      <p className="text-sm text-gray-900">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 font-medium mb-3">Shadows</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {Object.entries(config.designTokens.shadows).map(([key, value]) => (
+                    <div key={key}>
+                      <p className="text-xs text-gray-500">{key}</p>
+                      <p className="text-sm text-gray-900 font-mono text-xs">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {config.layoutSpacing && (
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 font-medium mb-3">Spacing</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <p className="text-xs text-gray-500">Section Padding</p>
+                      <p className="text-sm text-gray-900">{config.layoutSpacing.sectionPaddingY}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Card Padding</p>
+                      <p className="text-sm text-gray-900">{config.layoutSpacing.cardPadding}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Element Gap</p>
+                      <p className="text-sm text-gray-900">{config.layoutSpacing.elementGap}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {(config.emergencyButton || config.backButton) && (
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Button Configurations</h3>
+
+              <div className="space-y-4">
+                {config.emergencyButton && (
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-500 font-medium mb-3">Emergency Button</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {config.emergencyButton.text && (
+                        <div>
+                          <p className="text-xs text-gray-500">Text</p>
+                          <p className="text-sm text-gray-900">{config.emergencyButton.text}</p>
+                        </div>
+                      )}
+                      {config.emergencyButton.backgroundColor && (
+                        <div>
+                          <p className="text-xs text-gray-500">Background Color</p>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-6 h-6 rounded border border-gray-300"
+                              style={{ backgroundColor: config.emergencyButton.backgroundColor }}
+                            />
+                            <p className="text-sm text-gray-900">{config.emergencyButton.backgroundColor}</p>
+                          </div>
+                        </div>
+                      )}
+                      {config.emergencyButton.textColor && (
+                        <div>
+                          <p className="text-xs text-gray-500">Text Color</p>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-6 h-6 rounded border border-gray-300"
+                              style={{ backgroundColor: config.emergencyButton.textColor }}
+                            />
+                            <p className="text-sm text-gray-900">{config.emergencyButton.textColor}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {config.backButton && (
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-500 font-medium mb-3">Back Button</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {config.backButton.text && (
+                        <div>
+                          <p className="text-xs text-gray-500">Text</p>
+                          <p className="text-sm text-gray-900">{config.backButton.text}</p>
+                        </div>
+                      )}
+                      {config.backButton.backgroundColor && (
+                        <div>
+                          <p className="text-xs text-gray-500">Background Color</p>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-6 h-6 rounded border border-gray-300"
+                              style={{ backgroundColor: config.backButton.backgroundColor }}
+                            />
+                            <p className="text-sm text-gray-900">{config.backButton.backgroundColor}</p>
+                          </div>
+                        </div>
+                      )}
+                      {config.backButton.textColor && (
+                        <div>
+                          <p className="text-xs text-gray-500">Text Color</p>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-6 h-6 rounded border border-gray-300"
+                              style={{ backgroundColor: config.backButton.textColor }}
+                            />
+                            <p className="text-sm text-gray-900">{config.backButton.textColor}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Animations & Accessibility</h3>
+
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 font-medium mb-3">Animation Features</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.animations.features.scrollReveal}
+                      disabled
+                      className="rounded"
+                    />
+                    <p className="text-sm text-gray-900">Scroll Reveal</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.animations.features.hoverEffects}
+                      disabled
+                      className="rounded"
+                    />
+                    <p className="text-sm text-gray-900">Hover Effects</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.animations.features.pageTransitions}
+                      disabled
+                      className="rounded"
+                    />
+                    <p className="text-sm text-gray-900">Page Transitions</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.animations.features.reduceMotionRespect}
+                      disabled
+                      className="rounded"
+                    />
+                    <p className="text-sm text-gray-900">Respect Reduced Motion</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 font-medium mb-3">Accessibility</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-gray-500">High Contrast</p>
+                    <p className="text-sm text-gray-900">{config.accessibility.highContrast.enabled ? 'Enabled' : 'Disabled'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Focus Style</p>
+                    <p className="text-sm text-gray-900 capitalize">{config.accessibility.focusIndicators.style}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Keyboard Navigation</p>
+                    <p className="text-sm text-gray-900">{config.accessibility.keyboardNavigation.skipLinks ? 'Enabled' : 'Disabled'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Screen Reader</p>
+                    <p className="text-sm text-gray-900">{config.accessibility.screenReader.announcements ? 'Enabled' : 'Disabled'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
