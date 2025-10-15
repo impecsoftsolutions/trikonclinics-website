@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Calendar, Save, Image as ImageIcon, Video, Upload, X, AlertCircle } from 'lucide-react';
+import { Calendar, Save, Image as ImageIcon, Video, Upload, X, AlertCircle, Trash2, Star, Crop, GripVertical } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { BackButton } from '../components/BackButton';
@@ -23,6 +23,7 @@ interface EventImage {
   thumbnail_url: string;
   file_size_bytes: number;
   display_order: number;
+  is_featured: boolean;
   created_at: string;
 }
 
@@ -30,6 +31,15 @@ interface SelectedFile {
   file: File;
   preview: string;
   id: string;
+  croppedFile?: File;
+  needsCrop: boolean;
+}
+
+interface CropData {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 const MAX_PHOTOS = 20;
@@ -41,6 +51,7 @@ const EditEvent: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -53,6 +64,15 @@ const EditEvent: React.FC = () => {
   const [event, setEvent] = useState<Event | null>(null);
   const [uploadedPhotos, setUploadedPhotos] = useState<EventImage[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
+  const [draggedPhotoId, setDraggedPhotoId] = useState<string | null>(null);
+
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [currentCropFile, setCurrentCropFile] = useState<SelectedFile | null>(null);
+  const [cropData, setCropData] = useState<CropData>({ x: 0, y: 0, width: 0, height: 0 });
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [photoToDelete, setPhotoToDelete] = useState<EventImage | null>(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -149,7 +169,8 @@ const EditEvent: React.FC = () => {
       validFiles.push({
         file,
         preview: URL.createObjectURL(file),
-        id: Math.random().toString(36).substring(7)
+        id: Math.random().toString(36).substring(7),
+        needsCrop: true
       });
     });
 
@@ -162,6 +183,97 @@ const EditEvent: React.FC = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const openCropModal = (selectedFile: SelectedFile) => {
+    setCurrentCropFile(selectedFile);
+    setShowCropModal(true);
+
+    const img = new Image();
+    img.onload = () => {
+      setImageDimensions({ width: img.width, height: img.height });
+      const isPortrait = img.height > img.width;
+      const targetRatio = isPortrait ? 3 / 4 : 4 / 3;
+
+      let cropWidth, cropHeight;
+      if (isPortrait) {
+        cropWidth = img.width;
+        cropHeight = cropWidth / targetRatio;
+        if (cropHeight > img.height) {
+          cropHeight = img.height;
+          cropWidth = cropHeight * targetRatio;
+        }
+      } else {
+        cropHeight = img.height;
+        cropWidth = cropHeight * targetRatio;
+        if (cropWidth > img.width) {
+          cropWidth = img.width;
+          cropHeight = cropWidth / targetRatio;
+        }
+      }
+
+      setCropData({
+        x: (img.width - cropWidth) / 2,
+        y: (img.height - cropHeight) / 2,
+        width: cropWidth,
+        height: cropHeight
+      });
+    };
+    img.src = selectedFile.preview;
+  };
+
+  const handleAutoCrop = async () => {
+    if (!currentCropFile || !canvasRef.current) return;
+
+    const img = new Image();
+    img.onload = async () => {
+      const canvas = canvasRef.current!;
+      const ctx = canvas.getContext('2d')!;
+
+      canvas.width = cropData.width;
+      canvas.height = cropData.height;
+
+      ctx.drawImage(
+        img,
+        cropData.x, cropData.y, cropData.width, cropData.height,
+        0, 0, cropData.width, cropData.height
+      );
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+
+        const croppedFile = new File([blob], currentCropFile.file.name, {
+          type: currentCropFile.file.type
+        });
+
+        setSelectedFiles(prev =>
+          prev.map(f =>
+            f.id === currentCropFile.id
+              ? { ...f, croppedFile, needsCrop: false }
+              : f
+          )
+        );
+
+        setShowCropModal(false);
+        setCurrentCropFile(null);
+      }, currentCropFile.file.type);
+    };
+    img.src = currentCropFile.preview;
+  };
+
+  const skipCrop = () => {
+    if (!currentCropFile) return;
+
+    setSelectedFiles(prev =>
+      prev.map(f =>
+        f.id === currentCropFile.id
+          ? { ...f, needsCrop: false }
+          : f
+      )
+    );
+
+    setShowCropModal(false);
+    setCurrentCropFile(null);
   };
 
   const removeSelectedFile = (fileId: string) => {
@@ -178,6 +290,13 @@ const EditEvent: React.FC = () => {
   const handleUploadPhotos = async () => {
     if (selectedFiles.length === 0) return;
 
+    const filesNeedingCrop = selectedFiles.filter(f => f.needsCrop);
+    if (filesNeedingCrop.length > 0) {
+      setPhotoError('Please crop or skip all photos before uploading.');
+      openCropModal(filesNeedingCrop[0]);
+      return;
+    }
+
     setUploading(true);
     setPhotoError('');
     setUploadProgress(0);
@@ -188,12 +307,13 @@ const EditEvent: React.FC = () => {
 
       for (let i = 0; i < selectedFiles.length; i++) {
         const selectedFile = selectedFiles[i];
+        const fileToUpload = selectedFile.croppedFile || selectedFile.file;
         const fileExt = selectedFile.file.name.split('.').pop();
         const fileName = `${id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('event-images')
-          .upload(fileName, selectedFile.file, {
+          .upload(fileName, fileToUpload, {
             cacheControl: '3600',
             upsert: false
           });
@@ -206,7 +326,7 @@ const EditEvent: React.FC = () => {
 
         uploadedUrls.push({
           url: publicUrl,
-          size: selectedFile.file.size
+          size: fileToUpload.size
         });
 
         setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
@@ -222,7 +342,8 @@ const EditEvent: React.FC = () => {
         medium_url: item.url,
         thumbnail_url: item.url,
         file_size_bytes: item.size,
-        display_order: nextOrder + index
+        display_order: nextOrder + index,
+        is_featured: uploadedPhotos.length === 0 && index === 0
       }));
 
       const { data: insertedImages, error: insertError } = await supabase
@@ -246,6 +367,115 @@ const EditEvent: React.FC = () => {
     } finally {
       setUploading(false);
       setUploadProgress(0);
+    }
+  };
+
+  const handleSetFeatured = async (photoId: string) => {
+    try {
+      await supabase
+        .from('event_images')
+        .update({ is_featured: false })
+        .eq('event_id', id);
+
+      const { error: updateError } = await supabase
+        .from('event_images')
+        .update({ is_featured: true })
+        .eq('id', photoId);
+
+      if (updateError) throw updateError;
+
+      setUploadedPhotos(prev =>
+        prev.map(p => ({ ...p, is_featured: p.id === photoId }))
+      );
+
+      setSuccess('Featured image updated!');
+      setTimeout(() => setSuccess(''), 2000);
+    } catch (err) {
+      console.error('Error setting featured image:', err);
+      setPhotoError('Failed to set featured image.');
+    }
+  };
+
+  const handleDeletePhoto = async () => {
+    if (!photoToDelete) return;
+
+    try {
+      const urlParts = photoToDelete.original_url.split('/');
+      const fileName = urlParts.slice(-2).join('/');
+
+      const { error: storageError } = await supabase.storage
+        .from('event-images')
+        .remove([fileName]);
+
+      if (storageError) throw storageError;
+
+      const { error: dbError } = await supabase
+        .from('event_images')
+        .delete()
+        .eq('id', photoToDelete.id);
+
+      if (dbError) throw dbError;
+
+      setUploadedPhotos(prev => prev.filter(p => p.id !== photoToDelete.id));
+
+      setSuccess('Photo deleted successfully!');
+      setTimeout(() => setSuccess(''), 2000);
+    } catch (err) {
+      console.error('Error deleting photo:', err);
+      setPhotoError('Failed to delete photo.');
+    } finally {
+      setShowDeleteConfirm(false);
+      setPhotoToDelete(null);
+    }
+  };
+
+  const handleDragStart = (photoId: string) => {
+    setDraggedPhotoId(photoId);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetPhotoId: string) => {
+    e.preventDefault();
+    if (!draggedPhotoId || draggedPhotoId === targetPhotoId) {
+      setDraggedPhotoId(null);
+      return;
+    }
+
+    const draggedIndex = uploadedPhotos.findIndex(p => p.id === draggedPhotoId);
+    const targetIndex = uploadedPhotos.findIndex(p => p.id === targetPhotoId);
+
+    const newPhotos = [...uploadedPhotos];
+    const [removed] = newPhotos.splice(draggedIndex, 1);
+    newPhotos.splice(targetIndex, 0, removed);
+
+    const updatedPhotos = newPhotos.map((photo, index) => ({
+      ...photo,
+      display_order: index
+    }));
+
+    setUploadedPhotos(updatedPhotos);
+
+    try {
+      const updates = updatedPhotos.map(photo =>
+        supabase
+          .from('event_images')
+          .update({ display_order: photo.display_order })
+          .eq('id', photo.id)
+      );
+
+      await Promise.all(updates);
+
+      setSuccess('Photos reordered!');
+      setTimeout(() => setSuccess(''), 2000);
+    } catch (err) {
+      console.error('Error reordering photos:', err);
+      setPhotoError('Failed to reorder photos.');
+      fetchPhotos();
+    } finally {
+      setDraggedPhotoId(null);
     }
   };
 
@@ -334,6 +564,8 @@ const EditEvent: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-24">
+      <canvas ref={canvasRef} className="hidden" />
+
       <BackButton to="/admin/events" />
 
       <div className="flex items-center justify-between">
@@ -460,6 +692,18 @@ const EditEvent: React.FC = () => {
                       alt="Preview"
                       className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
                     />
+                    {selectedFile.needsCrop && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={() => openCropModal(selectedFile)}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600 transition-colors"
+                        >
+                          <Crop className="w-4 h-4" />
+                          Crop
+                        </button>
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => removeSelectedFile(selectedFile.id)}
@@ -491,15 +735,62 @@ const EditEvent: React.FC = () => {
 
           {uploadedPhotos.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Uploaded Photos</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">
+                Uploaded Photos (drag to reorder)
+              </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {uploadedPhotos.map((photo) => (
-                  <div key={photo.id} className="group">
+                  <div
+                    key={photo.id}
+                    draggable
+                    onDragStart={() => handleDragStart(photo.id)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, photo.id)}
+                    className={`relative group cursor-move ${
+                      draggedPhotoId === photo.id ? 'opacity-50' : ''
+                    }`}
+                  >
                     <img
                       src={photo.original_url}
                       alt="Event"
                       className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
                     />
+
+                    <div className="absolute top-2 left-2">
+                      <GripVertical className="w-5 h-5 text-white drop-shadow-lg" />
+                    </div>
+
+                    {photo.is_featured && (
+                      <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
+                        <Star className="w-3 h-3 fill-current" />
+                        Featured
+                      </div>
+                    )}
+
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-b-lg p-2 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => handleSetFeatured(photo.id)}
+                        disabled={photo.is_featured}
+                        className="flex items-center gap-1 px-2 py-1 bg-yellow-500 text-white text-xs rounded hover:bg-yellow-600 disabled:bg-gray-500 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <Star className="w-3 h-3" />
+                        {photo.is_featured ? 'Featured' : 'Set Featured'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPhotoToDelete(photo);
+                          setShowDeleteConfirm(true);
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Delete
+                      </button>
+                    </div>
+
                     <div className="text-xs text-gray-500 mt-1">
                       {formatFileSize(photo.file_size_bytes)}
                     </div>
@@ -529,6 +820,94 @@ const EditEvent: React.FC = () => {
           <p className="text-gray-600">Video management coming in Phase 5</p>
         </div>
       </div>
+
+      {showCropModal && currentCropFile && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Crop Photo</h3>
+
+              <div className="mb-4">
+                <img
+                  src={currentCropFile.preview}
+                  alt="Crop preview"
+                  className="w-full max-h-[400px] object-contain border-2 border-gray-300 rounded"
+                />
+              </div>
+
+              <p className="text-sm text-gray-600 mb-4">
+                Photo will be auto-cropped to {imageDimensions.height > imageDimensions.width ? '3:4 (portrait)' : '4:3 (landscape)'} ratio
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleAutoCrop}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Crop className="w-5 h-5" />
+                  Auto Crop
+                </button>
+
+                <button
+                  type="button"
+                  onClick={skipCrop}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Skip Crop
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCropModal(false);
+                    setCurrentCropFile(null);
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Delete Photo?</h3>
+
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete this photo? This action cannot be undone.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setPhotoToDelete(null);
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDeletePhoto}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">

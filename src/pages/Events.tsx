@@ -4,6 +4,13 @@ import { Calendar, Plus, Edit2, Trash2, Image as ImageIcon, Eye, EyeOff } from '
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
+interface EventImage {
+  id: string;
+  event_id: string;
+  thumbnail_url: string;
+  is_featured: boolean;
+}
+
 interface Event {
   id: string;
   title: string;
@@ -15,6 +22,8 @@ interface Event {
   updated_at: string;
   photos_count?: number;
   videos_count?: number;
+  featured_image?: EventImage | null;
+  first_image?: EventImage | null;
 }
 
 interface EventWithUser extends Event {
@@ -49,11 +58,35 @@ export const Events: React.FC = () => {
 
       if (eventsError) throw eventsError;
 
-      const processedEvents = eventsData?.map(event => ({
-        ...event,
-        photos_count: event.event_images?.[0]?.count || 0,
-        videos_count: event.event_videos?.[0]?.count || 0
-      })) || [];
+      const eventIds = eventsData?.map(e => e.id) || [];
+
+      const { data: imagesData } = await supabase
+        .from('event_images')
+        .select('id, event_id, thumbnail_url, is_featured, display_order')
+        .in('event_id', eventIds)
+        .order('display_order', { ascending: true });
+
+      const imagesByEvent = new Map<string, EventImage[]>();
+      imagesData?.forEach(img => {
+        if (!imagesByEvent.has(img.event_id)) {
+          imagesByEvent.set(img.event_id, []);
+        }
+        imagesByEvent.get(img.event_id)!.push(img);
+      });
+
+      const processedEvents = eventsData?.map(event => {
+        const images = imagesByEvent.get(event.id) || [];
+        const featuredImage = images.find(img => img.is_featured);
+        const firstImage = images[0];
+
+        return {
+          ...event,
+          photos_count: event.event_images?.[0]?.count || 0,
+          videos_count: event.event_videos?.[0]?.count || 0,
+          featured_image: featuredImage || null,
+          first_image: firstImage || null
+        };
+      }) || [];
 
       const userIds = [...new Set(processedEvents.map(e => e.created_by).filter(Boolean))];
       const { data: usersData } = await supabase
@@ -195,8 +228,16 @@ export const Events: React.FC = () => {
               {events.map((event) => (
                 <tr key={event.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <ImageIcon className="w-8 h-8 text-gray-400" />
+                    <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                      {event.featured_image || event.first_image ? (
+                        <img
+                          src={(event.featured_image || event.first_image)!.thumbnail_url}
+                          alt={event.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="w-8 h-8 text-gray-400" />
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
