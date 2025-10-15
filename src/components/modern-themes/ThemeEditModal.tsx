@@ -33,7 +33,7 @@ export const ThemeEditModal: React.FC<ThemeEditModalProps> = ({
   const [config, setConfig] = useState<ThemeConfig | null>(null);
   const [originalConfig, setOriginalConfig] = useState<ThemeConfig | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
-  const [previewMode, setPreviewMode] = useState<'light' | 'dark'>('light');
+  // Preview mode removed - light mode only
   const [changeDescription, setChangeDescription] = useState('');
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -186,16 +186,10 @@ export const ThemeEditModal: React.FC<ThemeEditModalProps> = ({
 
     const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
 
-    if (!cfg.colors?.light?.primary) {
-      errors.push('Light mode primary color is required');
-    } else if (!hexRegex.test(cfg.colors.light.primary)) {
-      errors.push('Light mode primary color must be a valid hex color');
-    }
-
-    if (!cfg.colors?.dark?.primary) {
-      errors.push('Dark mode primary color is required');
-    } else if (!hexRegex.test(cfg.colors.dark.primary)) {
-      errors.push('Dark mode primary color must be a valid hex color');
+    if (!cfg.colors?.primary) {
+      errors.push('Primary color is required');
+    } else if (!hexRegex.test(cfg.colors.primary)) {
+      errors.push('Primary color must be a valid hex color');
     }
 
     if (!cfg.typography?.fontFamilies?.heading) {
@@ -326,8 +320,6 @@ export const ThemeEditModal: React.FC<ThemeEditModalProps> = ({
           <div className="w-96 border-l border-gray-200 bg-gray-50 p-6 overflow-y-auto">
             <ThemePreviewPanel
               config={config}
-              mode={previewMode}
-              onModeToggle={() => setPreviewMode(previewMode === 'light' ? 'dark' : 'light')}
             />
           </div>
         </div>
@@ -511,36 +503,14 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ theme, changeDescription, onC
 );
 
 const ColorsTab: React.FC<TabProps> = ({ config, updateConfig }) => {
-  const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
-  const colors = colorMode === 'light' ? config.colors.light : config.colors.dark;
-  const basePath = ['colors', colorMode];
+  const colors = config.colors;
+  const basePath = ['colors'];
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Color Configuration</h3>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setColorMode('light')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              colorMode === 'light'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Light Mode
-          </button>
-          <button
-            onClick={() => setColorMode('dark')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              colorMode === 'dark'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Dark Mode
-          </button>
-        </div>
+        <p className="text-sm text-gray-600 mt-1">Configure the color palette for your theme (light mode only)</p>
       </div>
 
       <div className="space-y-6">

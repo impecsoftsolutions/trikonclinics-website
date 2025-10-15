@@ -61,9 +61,9 @@ export const ActiveThemeHeader: React.FC<ActiveThemeHeaderProps> = ({
             <div>
               <p className="text-xs text-gray-500 mb-1">Color Palette</p>
               <div className="flex gap-2">
-                <ColorSwatch color={activeTheme.config.colors.light.primary} size="sm" />
-                <ColorSwatch color={activeTheme.config.colors.light.secondary} size="sm" />
-                <ColorSwatch color={activeTheme.config.colors.light.accent} size="sm" />
+                <ColorSwatch color={activeTheme.config.colors.primary} size="sm" />
+                <ColorSwatch color={activeTheme.config.colors.secondary} size="sm" />
+                <ColorSwatch color={activeTheme.config.colors.accent} size="sm" />
               </div>
             </div>
 

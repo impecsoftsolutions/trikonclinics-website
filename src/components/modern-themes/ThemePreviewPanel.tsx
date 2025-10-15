@@ -1,19 +1,15 @@
 import React from 'react';
-import { Sun, Moon, User, Heart, Stethoscope } from 'lucide-react';
+import { User, Heart, Stethoscope } from 'lucide-react';
 import type { ThemeConfig } from '../../types/modernTheme';
 
 interface ThemePreviewPanelProps {
   config: ThemeConfig;
-  mode: 'light' | 'dark';
-  onModeToggle: () => void;
 }
 
 export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
   config,
-  mode,
-  onModeToggle,
 }) => {
-  const colors = mode === 'light' ? config.colors.light : config.colors.dark;
+  const colors = config.colors;
   const typography = config.typography;
   const layouts = config.layouts;
   const tokens = config.designTokens;
@@ -21,24 +17,8 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
   return (
     <div className="sticky top-6 h-fit">
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-        <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+        <div className="bg-gray-50 border-b border-gray-200 px-4 py-3">
           <h3 className="text-sm font-semibold text-gray-700">Live Preview</h3>
-          <button
-            onClick={onModeToggle}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
-          >
-            {mode === 'light' ? (
-              <>
-                <Sun className="w-4 h-4" />
-                Light
-              </>
-            ) : (
-              <>
-                <Moon className="w-4 h-4" />
-                Dark
-              </>
-            )}
-          </button>
         </div>
 
         <div

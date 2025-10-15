@@ -63,17 +63,17 @@ export const ThemeCard: React.FC<ThemeCardProps> = ({
         <p className="text-xs text-gray-500 mb-2 font-medium">Color Palette</p>
         <div className="flex gap-2">
           <ColorSwatch
-            color={theme.config.colors.light.primary}
+            color={theme.config.colors.primary}
             label="Primary"
             size="md"
           />
           <ColorSwatch
-            color={theme.config.colors.light.secondary}
+            color={theme.config.colors.secondary}
             label="Secondary"
             size="md"
           />
           <ColorSwatch
-            color={theme.config.colors.light.accent}
+            color={theme.config.colors.accent}
             label="Accent"
             size="md"
           />

@@ -176,11 +176,11 @@ export const ModernThemeSettings: React.FC = () => {
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Primary Colors</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  <ColorSwatch color={config.colors.light.primary} label="Primary" size="lg" />
-                  <ColorSwatch color={config.colors.light.secondary} label="Secondary" size="lg" />
-                  <ColorSwatch color={config.colors.light.accent} label="Accent" size="lg" />
-                  {config.colors.light.decorativeIcon && (
-                    <ColorSwatch color={config.colors.light.decorativeIcon} label="Decorative Icon" size="lg" />
+                  <ColorSwatch color={config.colors.primary} label="Primary" size="lg" />
+                  <ColorSwatch color={config.colors.secondary} label="Secondary" size="lg" />
+                  <ColorSwatch color={config.colors.accent} label="Accent" size="lg" />
+                  {config.colors.decorativeIcon && (
+                    <ColorSwatch color={config.colors.decorativeIcon} label="Decorative Icon" size="lg" />
                   )}
                 </div>
               </div>
@@ -188,38 +188,38 @@ export const ModernThemeSettings: React.FC = () => {
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Background Colors</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  <ColorSwatch color={config.colors.light.background.page} label="Page" size="lg" />
-                  <ColorSwatch color={config.colors.light.background.surface} label="Surface" size="lg" />
-                  <ColorSwatch color={config.colors.light.background.elevated} label="Elevated" size="lg" />
+                  <ColorSwatch color={config.colors.background.page} label="Page" size="lg" />
+                  <ColorSwatch color={config.colors.background.surface} label="Surface" size="lg" />
+                  <ColorSwatch color={config.colors.background.elevated} label="Elevated" size="lg" />
                 </div>
               </div>
 
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Text Colors</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  <ColorSwatch color={config.colors.light.text.primary} label="Primary Text" size="lg" />
-                  <ColorSwatch color={config.colors.light.text.secondary} label="Secondary Text" size="lg" />
-                  <ColorSwatch color={config.colors.light.text.muted} label="Muted Text" size="lg" />
-                  <ColorSwatch color={config.colors.light.text.inverse} label="Inverse Text" size="lg" />
+                  <ColorSwatch color={config.colors.text.primary} label="Primary Text" size="lg" />
+                  <ColorSwatch color={config.colors.text.secondary} label="Secondary Text" size="lg" />
+                  <ColorSwatch color={config.colors.text.muted} label="Muted Text" size="lg" />
+                  <ColorSwatch color={config.colors.text.inverse} label="Inverse Text" size="lg" />
                 </div>
               </div>
 
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Semantic Colors</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  <ColorSwatch color={config.colors.light.semantic.success} label="Success" size="lg" />
-                  <ColorSwatch color={config.colors.light.semantic.warning} label="Warning" size="lg" />
-                  <ColorSwatch color={config.colors.light.semantic.error} label="Error" size="lg" />
-                  <ColorSwatch color={config.colors.light.semantic.info} label="Info" size="lg" />
+                  <ColorSwatch color={config.colors.semantic.success} label="Success" size="lg" />
+                  <ColorSwatch color={config.colors.semantic.warning} label="Warning" size="lg" />
+                  <ColorSwatch color={config.colors.semantic.error} label="Error" size="lg" />
+                  <ColorSwatch color={config.colors.semantic.info} label="Info" size="lg" />
                 </div>
               </div>
 
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Border Colors</h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  <ColorSwatch color={config.colors.light.border.default} label="Default" size="lg" />
-                  <ColorSwatch color={config.colors.light.border.hover} label="Hover" size="lg" />
-                  <ColorSwatch color={config.colors.light.border.focus} label="Focus" size="lg" />
+                  <ColorSwatch color={config.colors.border.default} label="Default" size="lg" />
+                  <ColorSwatch color={config.colors.border.hover} label="Hover" size="lg" />
+                  <ColorSwatch color={config.colors.border.focus} label="Focus" size="lg" />
                 </div>
               </div>
             </div>

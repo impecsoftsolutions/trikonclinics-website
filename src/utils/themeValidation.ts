@@ -9,18 +9,10 @@ export interface ValidationError {
 export function validateThemeConfig(config: ThemeConfig): ValidationError[] {
   const errors: ValidationError[] = [];
 
-  if (!config.colors?.light?.primary || !isValidHexColor(config.colors.light.primary)) {
+  if (!config.colors?.primary || !isValidHexColor(config.colors.primary)) {
     errors.push({
-      field: 'colors.light.primary',
-      message: 'Light mode primary color must be a valid hex color',
-      severity: 'error',
-    });
-  }
-
-  if (!config.colors?.dark?.primary || !isValidHexColor(config.colors.dark.primary)) {
-    errors.push({
-      field: 'colors.dark.primary',
-      message: 'Dark mode primary color must be a valid hex color',
+      field: 'colors.primary',
+      message: 'Primary color must be a valid hex color',
       severity: 'error',
     });
   }
@@ -42,13 +34,13 @@ export function validateThemeConfig(config: ThemeConfig): ValidationError[] {
   }
 
   const textPrimaryContrast = getContrastRatio(
-    config.colors.light.text.primary,
-    config.colors.light.background.page
+    config.colors.text.primary,
+    config.colors.background.page
   );
 
   if (textPrimaryContrast < 4.5) {
     errors.push({
-      field: 'colors.light.text.primary',
+      field: 'colors.text.primary',
       message: `Text contrast ratio is ${textPrimaryContrast.toFixed(2)}:1. WCAG AA requires 4.5:1 minimum`,
       severity: 'warning',
     });

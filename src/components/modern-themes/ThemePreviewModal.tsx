@@ -132,8 +132,7 @@ export const ThemePreviewModal: React.FC<ThemePreviewModalProps> = ({
               <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
                 Colors
               </h3>
-              {renderColorSection('Light Mode', theme.config.colors.light)}
-              {renderColorSection('Dark Mode', theme.config.colors.dark)}
+              {renderColorSection('Color Palette', theme.config.colors)}
             </section>
 
             <section>
