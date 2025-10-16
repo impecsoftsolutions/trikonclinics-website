@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Calendar, Save, Image as ImageIcon, Video, Upload, X, AlertCircle, Trash2, Star, Crop, GripVertical } from 'lucide-react';
+import { Calendar, Save, Image as ImageIcon, Video, Upload, X, AlertCircle, Trash2, Star, Crop, GripVertical, Play } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { BackButton } from '../components/BackButton';
@@ -27,6 +27,16 @@ interface EventImage {
   created_at: string;
 }
 
+interface EventVideo {
+  id: string;
+  event_id: string;
+  youtube_url: string;
+  youtube_video_id: string;
+  title: string | null;
+  display_order: number;
+  created_at: string;
+}
+
 interface SelectedFile {
   file: File;
   preview: string;
@@ -43,6 +53,7 @@ interface CropData {
 }
 
 const MAX_PHOTOS = 20;
+const MAX_VIDEOS = 10;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
@@ -60,11 +71,18 @@ const EditEvent: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [photoError, setPhotoError] = useState('');
+  const [videoError, setVideoError] = useState('');
 
   const [event, setEvent] = useState<Event | null>(null);
   const [uploadedPhotos, setUploadedPhotos] = useState<EventImage[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [draggedPhotoId, setDraggedPhotoId] = useState<string | null>(null);
+
+  const [videos, setVideos] = useState<EventVideo[]>([]);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [addingVideo, setAddingVideo] = useState(false);
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+  const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
 
   const [showCropModal, setShowCropModal] = useState(false);
   const [currentCropFile, setCurrentCropFile] = useState<SelectedFile | null>(null);
@@ -84,6 +102,7 @@ const EditEvent: React.FC = () => {
     if (id) {
       fetchEvent();
       fetchPhotos();
+      fetchVideos();
     }
   }, [id]);
 
@@ -138,6 +157,122 @@ const EditEvent: React.FC = () => {
     } catch (err) {
       console.error('Error fetching photos:', err);
     }
+  };
+
+  const fetchVideos = async () => {
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('event_videos')
+        .select('*')
+        .eq('event_id', id)
+        .order('display_order', { ascending: true });
+
+      if (fetchError) throw fetchError;
+
+      setVideos(data || []);
+    } catch (err) {
+      console.error('Error fetching videos:', err);
+    }
+  };
+
+  const extractYouTubeVideoId = (url: string): string | null => {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+      /^([a-zA-Z0-9_-]{11})$/
+    ];
+
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) {
+        return match[1];
+      }
+    }
+
+    return null;
+  };
+
+  const fetchYouTubeMetadata = async (videoId: string): Promise<{ title: string } | null> => {
+    try {
+      const response = await fetch(
+        `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+      );
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      return { title: data.title || 'Untitled Video' };
+    } catch (err) {
+      console.error('Error fetching YouTube metadata:', err);
+      return null;
+    }
+  };
+
+  const handleAddVideo = async () => {
+    setVideoError('');
+
+    if (!videoUrl.trim()) {
+      setVideoError('Please enter a YouTube URL');
+      return;
+    }
+
+    if (videos.length >= MAX_VIDEOS) {
+      setVideoError(`Maximum ${MAX_VIDEOS} videos allowed per event`);
+      return;
+    }
+
+    const videoId = extractYouTubeVideoId(videoUrl.trim());
+    if (!videoId) {
+      setVideoError('Invalid YouTube URL. Please use a valid YouTube link.');
+      return;
+    }
+
+    const isDuplicate = videos.some(v => v.youtube_video_id === videoId);
+    if (isDuplicate) {
+      setVideoError('This video has already been added');
+      return;
+    }
+
+    setAddingVideo(true);
+
+    try {
+      const metadata = await fetchYouTubeMetadata(videoId);
+      const nextOrder = videos.length > 0
+        ? Math.max(...videos.map(v => v.display_order)) + 1
+        : 0;
+
+      const { data, error: insertError } = await supabase
+        .from('event_videos')
+        .insert({
+          event_id: id,
+          youtube_url: videoUrl.trim(),
+          youtube_video_id: videoId,
+          title: metadata?.title || null,
+          display_order: nextOrder
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      setVideos(prev => [...prev, data]);
+      setVideoUrl('');
+      setSuccess('Video added successfully!');
+      setTimeout(() => setSuccess(''), 2000);
+    } catch (err) {
+      console.error('Error adding video:', err);
+      setVideoError('Failed to add video. Please try again.');
+    } finally {
+      setAddingVideo(false);
+    }
+  };
+
+  const getYouTubeThumbnail = (videoId: string): string => {
+    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  };
+
+  const handleVideoClick = (videoId: string) => {
+    setCurrentVideoId(videoId);
+    setShowVideoPlayer(true);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -811,13 +946,92 @@ const EditEvent: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Video className="w-5 h-5 text-gray-600" />
-          <h2 className="text-xl font-semibold text-gray-900">Videos</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Video className="w-5 h-5 text-gray-600" />
+            <h2 className="text-xl font-semibold text-gray-900">Videos</h2>
+            <span className="text-sm text-gray-500">
+              ({videos.length}/{MAX_VIDEOS} videos)
+            </span>
+          </div>
         </div>
-        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <Video className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-600">Video management coming in Phase 5</p>
+
+        {videoError && (
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{videoError}</span>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="Paste YouTube URL (e.g., https://www.youtube.com/watch?v=...)"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={addingVideo || videos.length >= MAX_VIDEOS}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddVideo();
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleAddVideo}
+              disabled={addingVideo || videos.length >= MAX_VIDEOS}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              <Video className="w-5 h-5" />
+              {addingVideo ? 'Adding...' : 'Add Video'}
+            </button>
+          </div>
+
+          <p className="text-xs text-gray-500">
+            Supported formats: YouTube video links (watch, youtu.be, embed). Max {MAX_VIDEOS} videos.
+          </p>
+
+          {videos.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Added Videos</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {videos.map((video) => (
+                  <div
+                    key={video.id}
+                    className="relative group cursor-pointer"
+                    onClick={() => handleVideoClick(video.youtube_video_id)}
+                  >
+                    <div className="relative aspect-video rounded-lg overflow-hidden">
+                      <img
+                        src={getYouTubeThumbnail(video.youtube_video_id)}
+                        alt={video.title || 'Video'}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Play className="w-12 h-12 text-white drop-shadow-lg" />
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-900 line-clamp-2">
+                        {video.title || 'Untitled Video'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {videos.length === 0 && (
+            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <Video className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-600">No videos added yet</p>
+              <p className="text-sm text-gray-500 mt-1">Paste a YouTube URL above to add videos</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -904,6 +1118,32 @@ const EditEvent: React.FC = () => {
                   Delete
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showVideoPlayer && currentVideoId && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-5xl">
+            <button
+              onClick={() => {
+                setShowVideoPlayer(false);
+                setCurrentVideoId(null);
+              }}
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <div className="bg-black rounded-lg overflow-hidden" style={{ paddingTop: '56.25%', position: 'relative' }}>
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src={`https://www.youtube.com/embed/${currentVideoId}?autoplay=1`}
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
             </div>
           </div>
         </div>
