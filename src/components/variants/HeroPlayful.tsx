@@ -149,18 +149,6 @@ export const HeroPlayful: React.FC<HeroPlayfulProps> = ({
           </div>
         </div>
       </div>
-
-      <div className="absolute bottom-0 left-0 right-0 hidden md:block">
-        <svg
-          className="w-full h-16 md:h-24"
-          viewBox="0 0 1440 74"
-          fill="currentColor"
-          style={{ color: `hsl(var(--color-bg-page))` }}
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path d="M0 74L60 69.3C120 64.7 240 55.3 360 50.7C480 46 600 46 720 50.7C840 55.3 960 64.7 1080 64.7C1200 64.7 1320 55.3 1380 50.7L1440 46V74H1380C1320 74 1200 74 1080 74C960 74 840 74 720 74C600 74 480 74 360 74C240 74 120 74 60 74H0Z"></path>
-        </svg>
-      </div>
     </section>
   );
 };
