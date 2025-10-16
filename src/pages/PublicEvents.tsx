@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useModernTheme } from '../hooks/useModernTheme';
-import { Calendar, MapPin } from 'lucide-react';
-import { format, isPast, isFuture } from 'date-fns';
+import { Calendar } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface EventImage {
   id: string;
@@ -51,37 +51,18 @@ export const PublicEvents: React.FC = () => {
           )
         `)
         .eq('status', 'published')
-        .order('event_date', { ascending: true });
+        .order('event_date', { ascending: false });
 
       if (error) throw error;
 
       if (data) {
-        const sortedEvents = sortEventsByDate(data);
-        setEvents(sortedEvents);
+        setEvents(data);
       }
     } catch (error) {
       console.error('Error loading events:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const sortEventsByDate = (events: Event[]): Event[] => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const upcoming = events.filter(event =>
-      isFuture(new Date(event.event_date)) ||
-      format(new Date(event.event_date), 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
-    );
-    const past = events.filter(event => isPast(new Date(event.event_date)) &&
-      format(new Date(event.event_date), 'yyyy-MM-dd') !== format(today, 'yyyy-MM-dd')
-    );
-
-    upcoming.sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
-    past.sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
-
-    return [...upcoming, ...past];
   };
 
   const getThumbnailUrl = (event: Event): string | null => {
@@ -107,13 +88,6 @@ export const PublicEvents: React.FC = () => {
     } catch (error) {
       return dateString;
     }
-  };
-
-  const isEventUpcoming = (dateString: string): boolean => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const eventDate = new Date(dateString);
-    return isFuture(eventDate) || format(eventDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
   };
 
   if (loading) {
@@ -176,7 +150,6 @@ export const PublicEvents: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {events.map((event) => {
                 const thumbnailUrl = getThumbnailUrl(event);
-                const isUpcoming = isEventUpcoming(event.event_date);
 
                 return (
                   <div
@@ -199,13 +172,6 @@ export const PublicEvents: React.FC = () => {
                           }}
                         >
                           <Calendar className="w-20 h-20 text-white" />
-                        </div>
-                      )}
-                      {isUpcoming && (
-                        <div className="absolute top-4 right-4">
-                          <span className="px-3 py-1 bg-green-500 text-white text-sm font-semibold rounded-full shadow-lg">
-                            Upcoming
-                          </span>
                         </div>
                       )}
                     </div>
