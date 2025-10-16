@@ -50,6 +50,12 @@ export function useModernTheme() {
       hoverBackgroundColor: '',
       hoverTextColor: '',
     },
+    primaryCtaButton: context.theme.primaryCtaButton || {
+      text: 'Get Started',
+      backgroundColor: '#CC0000',
+      textColor: '#FFFFFF',
+      hoverOpacity: 0.9,
+    },
     navigationActiveBackground: context.theme.layouts?.navigation?.activeBackground,
     decorativeIconColor: colors?.decorativeIcon || '#FBBF24',
     healthLibraryEnabled: context.healthLibraryEnabled,

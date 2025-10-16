@@ -200,6 +200,14 @@ export interface BackButton {
   hoverTextColor?: string;
 }
 
+export interface PrimaryCTAButton {
+  text?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  hoverOpacity?: number;
+  hoverBackgroundColor?: string;
+}
+
 export interface ThemeConfig {
   layoutStyle?: 'modern' | 'minimal' | 'playful';
   layoutTypography?: LayoutTypography;
@@ -213,6 +221,7 @@ export interface ThemeConfig {
   typography: Typography;
   emergencyButton?: EmergencyButton;
   backButton?: BackButton;
+  primaryCtaButton?: PrimaryCTAButton;
 }
 
 export interface ModernTheme {

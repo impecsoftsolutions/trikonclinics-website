@@ -24,7 +24,7 @@ interface Event {
 
 export const PublicEvents: React.FC = () => {
   const navigate = useNavigate();
-  const { colors, getGradient } = useModernTheme();
+  const { colors, getGradient, primaryCtaButton } = useModernTheme();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -207,13 +207,13 @@ export const PublicEvents: React.FC = () => {
                       )}
 
                       <button
-                        className="w-full py-2 px-4 rounded-lg font-semibold transition-colors"
+                        className="w-full py-2 px-4 rounded-lg font-semibold transition-opacity"
                         style={{
-                          backgroundColor: `hsl(var(--color-primary))`,
-                          color: `hsl(var(--color-text-inverse))`,
+                          backgroundColor: primaryCtaButton.backgroundColor,
+                          color: primaryCtaButton.textColor,
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.opacity = '0.9';
+                          e.currentTarget.style.opacity = String(primaryCtaButton.hoverOpacity);
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.opacity = '1';

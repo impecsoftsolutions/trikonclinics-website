@@ -304,6 +304,12 @@ export const FALLBACK_THEME_CONFIG: ThemeConfig = {
     hoverBackgroundColor: '',
     hoverTextColor: '',
   },
+  primaryCtaButton: {
+    text: 'Get Started',
+    backgroundColor: '#CC0000',
+    textColor: '#FFFFFF',
+    hoverOpacity: 0.9,
+  },
 };
 
 export const FALLBACK_THEME_NAME = 'Clinical Modern';
