@@ -10,6 +10,7 @@ import { Testimonials } from './pages/Testimonials';
 import { Contact } from './pages/Contact';
 import HealthLibrary from './pages/HealthLibrary';
 import HealthLibraryDetail from './pages/HealthLibraryDetail';
+import { PublicEvents } from './pages/PublicEvents';
 import { HospitalProfile } from './pages/HospitalProfile';
 import { ManageDoctors } from './pages/ManageDoctors';
 import { ManageServices } from './pages/ManageServices';
@@ -39,6 +40,7 @@ function App() {
               <Route path="/services" element={<Services />} />
               <Route path="/health-library" element={<HealthLibrary />} />
               <Route path="/health-library/:slug" element={<HealthLibraryDetail />} />
+              <Route path="/events" element={<PublicEvents />} />
               <Route path="/testimonials" element={<Testimonials />} />
               <Route path="/contact" element={<Contact />} />
             </Route>
