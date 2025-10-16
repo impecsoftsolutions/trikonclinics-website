@@ -804,43 +804,6 @@ const LayoutsTab: React.FC<TabProps> = ({ config, updateConfig }) => (
     </section>
 
     <section>
-      <h4 className="font-semibold text-gray-800 mb-3">Emergency Button</h4>
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Button Text</label>
-          <input
-            type="text"
-            value={config.emergencyButton?.text || 'Emergency Call'}
-            onChange={(e) => updateConfig(['emergencyButton', 'text'], e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            placeholder="Emergency Call"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Background Color</label>
-          <input
-            type="color"
-            value={config.emergencyButton?.backgroundColor || '#EF4444'}
-            onChange={(e) => updateConfig(['emergencyButton', 'backgroundColor'], e.target.value)}
-            className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
-          <input
-            type="color"
-            value={config.emergencyButton?.textColor || '#FFFFFF'}
-            onChange={(e) => updateConfig(['emergencyButton', 'textColor'], e.target.value)}
-            className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
-          />
-        </div>
-        <p className="text-xs text-gray-600">
-          Customize the emergency call button in hero sections
-        </p>
-      </div>
-    </section>
-
-    <section>
       <h4 className="font-semibold text-gray-800 mb-3">Back Button</h4>
       <div className="space-y-4">
         <div>

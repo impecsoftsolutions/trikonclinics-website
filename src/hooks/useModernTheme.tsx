@@ -37,11 +37,6 @@ export function useModernTheme() {
     layoutStyle: context.layoutStyle,
     layoutTypography: context.layoutTypography,
     layoutSpacing: context.layoutSpacing,
-    emergencyButton: context.theme.emergencyButton || {
-      text: 'Emergency Call',
-      backgroundColor: '#EF4444',
-      textColor: '#FFFFFF'
-    },
     backButton: context.theme.backButton || {
       text: 'Back',
       backgroundColor: 'transparent',

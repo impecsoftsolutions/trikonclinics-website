@@ -185,12 +185,6 @@ export interface LayoutSpacing {
   elementGap: string;
 }
 
-export interface EmergencyButton {
-  text?: string;
-  backgroundColor?: string;
-  textColor?: string;
-}
-
 export interface BackButton {
   text?: string;
   backgroundColor?: string;
@@ -219,7 +213,6 @@ export interface ThemeConfig {
   animations: Animations;
   accessibility: Accessibility;
   typography: Typography;
-  emergencyButton?: EmergencyButton;
   backButton?: BackButton;
   primaryCtaButton?: PrimaryCTAButton;
 }

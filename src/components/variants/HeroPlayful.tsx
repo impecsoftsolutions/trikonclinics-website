@@ -21,7 +21,7 @@ export const HeroPlayful: React.FC<HeroPlayfulProps> = ({
   appointmentLink,
   phoneNumber,
 }) => {
-  const { colors, getGradient, layoutTypography, layoutSpacing, emergencyButton } = useModernTheme();
+  const { colors, getGradient, layoutTypography, layoutSpacing } = useModernTheme();
 
   return (
     <section
@@ -117,17 +117,6 @@ export const HeroPlayful: React.FC<HeroPlayfulProps> = ({
                 <Calendar className="w-6 h-6 group-hover:rotate-12 transition-transform" />
                 Book Your Visit
               </Link>
-              <a
-                href={phoneNumber ? `tel:${phoneNumber}` : '#contact'}
-                className="inline-flex items-center justify-center gap-3 font-bold hover:opacity-90 transition-all shadow-lg px-8 py-4 rounded-full"
-                style={{
-                  backgroundColor: emergencyButton?.backgroundColor || '#FFFFFF',
-                  color: emergencyButton?.textColor || '#111827',
-                }}
-              >
-                <Phone className="w-6 h-6" />
-                {phoneNumber ? (emergencyButton?.text || 'Call Now') : 'Contact Us'}
-              </a>
             </div>
           </div>
 

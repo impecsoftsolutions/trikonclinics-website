@@ -21,7 +21,7 @@ export const HeroModern: React.FC<HeroModernProps> = ({
   appointmentLink,
   phoneNumber,
 }) => {
-  const { colors, getGradient, layoutTypography, layoutSpacing, emergencyButton } = useModernTheme();
+  const { colors, getGradient, layoutTypography, layoutSpacing } = useModernTheme();
 
   return (
     <section
@@ -78,17 +78,6 @@ export const HeroModern: React.FC<HeroModernProps> = ({
                 <Calendar className="w-5 h-5" />
                 Book Appointment
               </Link>
-              <a
-                href={phoneNumber ? `tel:${phoneNumber}` : '#contact'}
-                className="inline-flex items-center justify-center gap-2 backdrop-blur-md px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-all border border-white/30"
-                style={{
-                  backgroundColor: emergencyButton?.backgroundColor || 'rgba(255, 255, 255, 0.1)',
-                  color: emergencyButton?.textColor || 'white',
-                }}
-              >
-                <Phone className="w-5 h-5" />
-                {phoneNumber ? (emergencyButton?.text || 'Emergency Call') : 'Contact Us'}
-              </a>
             </div>
           </div>
 

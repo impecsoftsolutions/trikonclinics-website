@@ -291,11 +291,6 @@ export const FALLBACK_THEME_CONFIG: ThemeConfig = {
     },
     fontLoadingStrategy: 'swap',
   },
-  emergencyButton: {
-    text: 'Emergency Call',
-    backgroundColor: '#EF4444',
-    textColor: '#FFFFFF',
-  },
   backButton: {
     text: 'Back',
     backgroundColor: 'transparent',

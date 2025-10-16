@@ -231,17 +231,6 @@ export const Contact: React.FC = () => {
                     </div>
                   </div>
                 )}
-
-                <a
-                  href="tel:+919052995959"
-                  className="flex items-center justify-center gap-2 text-white px-6 py-3 rounded-lg font-semibold w-full transition-all hover:shadow-lg"
-                  style={{ backgroundColor: '#10B981' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#059669')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#10B981')}
-                >
-                  <Phone className="w-5 h-5" />
-                  <span>Call Us</span>
-                </a>
               </div>
             </div>
 
