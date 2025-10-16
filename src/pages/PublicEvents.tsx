@@ -92,7 +92,10 @@ export const PublicEvents: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
+      <div
+        className="flex items-center justify-center min-h-screen"
+        style={{ backgroundColor: `hsl(var(--color-bg-base))` }}
+      >
         <div className="text-center">
           <div
             className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4"
@@ -108,7 +111,10 @@ export const PublicEvents: React.FC = () => {
   }
 
   return (
-    <div className="bg-white min-h-screen">
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: `hsl(var(--color-bg-base))` }}
+    >
       <section
         className="text-white py-20"
         style={{
@@ -154,7 +160,8 @@ export const PublicEvents: React.FC = () => {
                 return (
                   <div
                     key={event.id}
-                    className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden cursor-pointer"
+                    className="rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden cursor-pointer"
+                    style={{ backgroundColor: `hsl(var(--color-bg-surface))` }}
                     onClick={() => navigate(`/events/${event.slug}`)}
                   >
                     <div className="relative h-64">
