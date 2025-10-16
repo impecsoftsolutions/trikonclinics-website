@@ -83,6 +83,9 @@ const EditEvent: React.FC = () => {
   const [addingVideo, setAddingVideo] = useState(false);
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
+  const [draggedVideoId, setDraggedVideoId] = useState<string | null>(null);
+  const [showDeleteVideoConfirm, setShowDeleteVideoConfirm] = useState(false);
+  const [videoToDelete, setVideoToDelete] = useState<EventVideo | null>(null);
 
   const [showCropModal, setShowCropModal] = useState(false);
   const [currentCropFile, setCurrentCropFile] = useState<SelectedFile | null>(null);
@@ -273,6 +276,80 @@ const EditEvent: React.FC = () => {
   const handleVideoClick = (videoId: string) => {
     setCurrentVideoId(videoId);
     setShowVideoPlayer(true);
+  };
+
+  const handleVideoDragStart = (videoId: string) => {
+    setDraggedVideoId(videoId);
+  };
+
+  const handleVideoDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleVideoDrop = async (e: React.DragEvent, targetVideoId: string) => {
+    e.preventDefault();
+    if (!draggedVideoId || draggedVideoId === targetVideoId) {
+      setDraggedVideoId(null);
+      return;
+    }
+
+    const draggedIndex = videos.findIndex(v => v.id === draggedVideoId);
+    const targetIndex = videos.findIndex(v => v.id === targetVideoId);
+
+    const newVideos = [...videos];
+    const [removed] = newVideos.splice(draggedIndex, 1);
+    newVideos.splice(targetIndex, 0, removed);
+
+    const updatedVideos = newVideos.map((video, index) => ({
+      ...video,
+      display_order: index
+    }));
+
+    setVideos(updatedVideos);
+
+    try {
+      const updates = updatedVideos.map(video =>
+        supabase
+          .from('event_videos')
+          .update({ display_order: video.display_order })
+          .eq('id', video.id)
+      );
+
+      await Promise.all(updates);
+
+      setSuccess('Videos reordered!');
+      setTimeout(() => setSuccess(''), 2000);
+    } catch (err) {
+      console.error('Error reordering videos:', err);
+      setVideoError('Failed to reorder videos.');
+      fetchVideos();
+    } finally {
+      setDraggedVideoId(null);
+    }
+  };
+
+  const handleDeleteVideo = async () => {
+    if (!videoToDelete) return;
+
+    try {
+      const { error: dbError } = await supabase
+        .from('event_videos')
+        .delete()
+        .eq('id', videoToDelete.id);
+
+      if (dbError) throw dbError;
+
+      setVideos(prev => prev.filter(v => v.id !== videoToDelete.id));
+
+      setSuccess('Video deleted successfully!');
+      setTimeout(() => setSuccess(''), 2000);
+    } catch (err) {
+      console.error('Error deleting video:', err);
+      setVideoError('Failed to delete video.');
+    } finally {
+      setShowDeleteVideoConfirm(false);
+      setVideoToDelete(null);
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -996,15 +1073,43 @@ const EditEvent: React.FC = () => {
 
           {videos.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Added Videos</h3>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">
+                Added Videos (drag to reorder)
+              </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {videos.map((video) => (
                   <div
                     key={video.id}
-                    className="relative group cursor-pointer"
-                    onClick={() => handleVideoClick(video.youtube_video_id)}
+                    draggable
+                    onDragStart={() => handleVideoDragStart(video.id)}
+                    onDragOver={handleVideoDragOver}
+                    onDrop={(e) => handleVideoDrop(e, video.id)}
+                    className={`relative group cursor-move transition-opacity ${
+                      draggedVideoId === video.id ? 'opacity-50' : 'opacity-100'
+                    }`}
                   >
-                    <div className="relative aspect-video rounded-lg overflow-hidden">
+                    <div className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <GripVertical className="w-5 h-5 text-white drop-shadow-lg" />
+                    </div>
+
+                    <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setVideoToDelete(video);
+                          setShowDeleteVideoConfirm(true);
+                        }}
+                        className="p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                        title="Delete video"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div
+                      className="relative aspect-video rounded-lg overflow-hidden cursor-pointer"
+                      onClick={() => handleVideoClick(video.youtube_video_id)}
+                    >
                       <img
                         src={getYouTubeThumbnail(video.youtube_video_id)}
                         alt={video.title || 'Video'}
@@ -1112,6 +1217,42 @@ const EditEvent: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleDeletePhoto}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteVideoConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Delete Video?</h3>
+
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete this video? This action cannot be undone.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteVideoConfirm(false);
+                    setVideoToDelete(null);
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDeleteVideo}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 >
                   <Trash2 className="w-5 h-5" />
