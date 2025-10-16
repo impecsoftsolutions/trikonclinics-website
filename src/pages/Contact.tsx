@@ -172,24 +172,6 @@ export const Contact: React.FC = () => {
                           {phone}
                         </a>
                       ))}
-                      <div className="mt-4">
-                        <a
-                          href={`tel:${contactInfo.phone_numbers[0]}`}
-                          className="inline-block px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-md"
-                          style={{
-                            backgroundColor: callUsButton.backgroundColor,
-                            color: callUsButton.textColor,
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.opacity = String(callUsButton.hoverOpacity);
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.opacity = '1';
-                          }}
-                        >
-                          {callUsButton.text}
-                        </a>
-                      </div>
                     </div>
                   </div>
                 )}
@@ -247,6 +229,27 @@ export const Contact: React.FC = () => {
                         {contactInfo.working_hours}
                       </p>
                     </div>
+                  </div>
+                )}
+
+                {contactInfo?.phone_numbers && contactInfo.phone_numbers.length > 0 && (
+                  <div className="mt-6">
+                    <a
+                      href={`tel:${contactInfo.phone_numbers[0]}`}
+                      className="w-full block px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-md text-center"
+                      style={{
+                        backgroundColor: callUsButton.backgroundColor,
+                        color: callUsButton.textColor,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = String(callUsButton.hoverOpacity);
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = '1';
+                      }}
+                    >
+                      {callUsButton.text}
+                    </a>
                   </div>
                 )}
               </div>
