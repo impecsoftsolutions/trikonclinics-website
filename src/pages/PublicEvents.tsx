@@ -43,7 +43,7 @@ export const PublicEvents: React.FC = () => {
           event_date,
           short_description,
           featured_image_id,
-          event_images (
+          event_images!event_images_event_id_fkey (
             id,
             thumbnail_url,
             medium_url,
