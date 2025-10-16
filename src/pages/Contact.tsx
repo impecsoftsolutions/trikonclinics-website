@@ -13,7 +13,7 @@ interface ContactInfo {
 }
 
 export const Contact: React.FC = () => {
-  const { colors, getGradient } = useModernTheme();
+  const { colors, getGradient, callUsButton } = useModernTheme();
   const [contactInfo, setContactInfo] = useState<ContactInfo | null>(null);
   const [hospitalName, setHospitalName] = useState<string>('Trikon Clinics');
   const [loading, setLoading] = useState(true);
@@ -153,7 +153,7 @@ export const Contact: React.FC = () => {
                     >
                       <Phone className="w-6 h-6" style={{ color: `hsl(var(--color-primary))` }} />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <h3
                         className="font-semibold mb-1"
                         style={{ color: `hsl(var(--color-text-primary))` }}
@@ -172,6 +172,24 @@ export const Contact: React.FC = () => {
                           {phone}
                         </a>
                       ))}
+                      <div className="mt-4">
+                        <a
+                          href={`tel:${contactInfo.phone_numbers[0]}`}
+                          className="inline-block px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-md"
+                          style={{
+                            backgroundColor: callUsButton.backgroundColor,
+                            color: callUsButton.textColor,
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.opacity = String(callUsButton.hoverOpacity);
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.opacity = '1';
+                          }}
+                        >
+                          {callUsButton.text}
+                        </a>
+                      </div>
                     </div>
                   </div>
                 )}
