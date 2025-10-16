@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Calendar, Save, Image as ImageIcon, Video, Upload, X, AlertCircle, Trash2, Star, Crop, GripVertical, Play } from 'lucide-react';
+import { Calendar, Save, Image as ImageIcon, Video, Upload, X, AlertCircle, Trash2, Star, GripVertical, Play } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { BackButton } from '../components/BackButton';
@@ -41,15 +41,6 @@ interface SelectedFile {
   file: File;
   preview: string;
   id: string;
-  croppedFile?: File;
-  needsCrop: boolean;
-}
-
-interface CropData {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
 }
 
 const MAX_PHOTOS = 20;
@@ -62,7 +53,6 @@ const EditEvent: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -86,11 +76,6 @@ const EditEvent: React.FC = () => {
   const [draggedVideoId, setDraggedVideoId] = useState<string | null>(null);
   const [showDeleteVideoConfirm, setShowDeleteVideoConfirm] = useState(false);
   const [videoToDelete, setVideoToDelete] = useState<EventVideo | null>(null);
-
-  const [showCropModal, setShowCropModal] = useState(false);
-  const [currentCropFile, setCurrentCropFile] = useState<SelectedFile | null>(null);
-  const [cropData, setCropData] = useState<CropData>({ x: 0, y: 0, width: 0, height: 0 });
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState<EventImage | null>(null);
@@ -381,8 +366,7 @@ const EditEvent: React.FC = () => {
       validFiles.push({
         file,
         preview: URL.createObjectURL(file),
-        id: Math.random().toString(36).substring(7),
-        needsCrop: true
+        id: Math.random().toString(36).substring(7)
       });
     });
 
@@ -395,97 +379,6 @@ const EditEvent: React.FC = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
-
-  const openCropModal = (selectedFile: SelectedFile) => {
-    setCurrentCropFile(selectedFile);
-    setShowCropModal(true);
-
-    const img = new Image();
-    img.onload = () => {
-      setImageDimensions({ width: img.width, height: img.height });
-      const isPortrait = img.height > img.width;
-      const targetRatio = isPortrait ? 3 / 4 : 4 / 3;
-
-      let cropWidth, cropHeight;
-      if (isPortrait) {
-        cropWidth = img.width;
-        cropHeight = cropWidth / targetRatio;
-        if (cropHeight > img.height) {
-          cropHeight = img.height;
-          cropWidth = cropHeight * targetRatio;
-        }
-      } else {
-        cropHeight = img.height;
-        cropWidth = cropHeight * targetRatio;
-        if (cropWidth > img.width) {
-          cropWidth = img.width;
-          cropHeight = cropWidth / targetRatio;
-        }
-      }
-
-      setCropData({
-        x: (img.width - cropWidth) / 2,
-        y: (img.height - cropHeight) / 2,
-        width: cropWidth,
-        height: cropHeight
-      });
-    };
-    img.src = selectedFile.preview;
-  };
-
-  const handleAutoCrop = async () => {
-    if (!currentCropFile || !canvasRef.current) return;
-
-    const img = new Image();
-    img.onload = async () => {
-      const canvas = canvasRef.current!;
-      const ctx = canvas.getContext('2d')!;
-
-      canvas.width = cropData.width;
-      canvas.height = cropData.height;
-
-      ctx.drawImage(
-        img,
-        cropData.x, cropData.y, cropData.width, cropData.height,
-        0, 0, cropData.width, cropData.height
-      );
-
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-
-        const croppedFile = new File([blob], currentCropFile.file.name, {
-          type: currentCropFile.file.type
-        });
-
-        setSelectedFiles(prev =>
-          prev.map(f =>
-            f.id === currentCropFile.id
-              ? { ...f, croppedFile, needsCrop: false }
-              : f
-          )
-        );
-
-        setShowCropModal(false);
-        setCurrentCropFile(null);
-      }, currentCropFile.file.type);
-    };
-    img.src = currentCropFile.preview;
-  };
-
-  const skipCrop = () => {
-    if (!currentCropFile) return;
-
-    setSelectedFiles(prev =>
-      prev.map(f =>
-        f.id === currentCropFile.id
-          ? { ...f, needsCrop: false }
-          : f
-      )
-    );
-
-    setShowCropModal(false);
-    setCurrentCropFile(null);
   };
 
   const removeSelectedFile = (fileId: string) => {
@@ -502,13 +395,6 @@ const EditEvent: React.FC = () => {
   const handleUploadPhotos = async () => {
     if (selectedFiles.length === 0) return;
 
-    const filesNeedingCrop = selectedFiles.filter(f => f.needsCrop);
-    if (filesNeedingCrop.length > 0) {
-      setPhotoError('Please crop or skip all photos before uploading.');
-      openCropModal(filesNeedingCrop[0]);
-      return;
-    }
-
     setUploading(true);
     setPhotoError('');
     setUploadProgress(0);
@@ -519,7 +405,7 @@ const EditEvent: React.FC = () => {
 
       for (let i = 0; i < selectedFiles.length; i++) {
         const selectedFile = selectedFiles[i];
-        const fileToUpload = selectedFile.croppedFile || selectedFile.file;
+        const fileToUpload = selectedFile.file;
         const fileExt = selectedFile.file.name.split('.').pop();
         const fileName = `${id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
@@ -776,8 +662,6 @@ const EditEvent: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-24">
-      <canvas ref={canvasRef} className="hidden" />
-
       <BackButton to="/admin/events" />
 
       <div className="flex items-center justify-between">
@@ -904,18 +788,6 @@ const EditEvent: React.FC = () => {
                       alt="Preview"
                       className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
                     />
-                    {selectedFile.needsCrop && (
-                      <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
-                        <button
-                          type="button"
-                          onClick={() => openCropModal(selectedFile)}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600 transition-colors"
-                        >
-                          <Crop className="w-4 h-4" />
-                          Crop
-                        </button>
-                      </div>
-                    )}
                     <button
                       type="button"
                       onClick={() => removeSelectedFile(selectedFile.id)}
@@ -1139,58 +1011,6 @@ const EditEvent: React.FC = () => {
           )}
         </div>
       </div>
-
-      {showCropModal && currentCropFile && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Crop Photo</h3>
-
-              <div className="mb-4">
-                <img
-                  src={currentCropFile.preview}
-                  alt="Crop preview"
-                  className="w-full max-h-[400px] object-contain border-2 border-gray-300 rounded"
-                />
-              </div>
-
-              <p className="text-sm text-gray-600 mb-4">
-                Photo will be auto-cropped to {imageDimensions.height > imageDimensions.width ? '3:4 (portrait)' : '4:3 (landscape)'} ratio
-              </p>
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={handleAutoCrop}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Crop className="w-5 h-5" />
-                  Auto Crop
-                </button>
-
-                <button
-                  type="button"
-                  onClick={skipCrop}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Skip Crop
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCropModal(false);
-                    setCurrentCropFile(null);
-                  }}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
