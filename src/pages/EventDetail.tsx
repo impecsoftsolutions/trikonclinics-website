@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useModernTheme } from '../hooks/useModernTheme';
 import { BackButton } from '../components/BackButton';
-import { Calendar, X, Image as ImageIcon, Video as VideoIcon, AlertCircle } from 'lucide-react';
+import { Calendar, X, Image as ImageIcon, Video as VideoIcon, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface EventImage {
@@ -43,13 +43,32 @@ export const EventDetail: React.FC = () => {
   const [videos, setVideos] = useState<EventVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [lightboxImage, setLightboxImage] = useState<EventImage | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number>(-1);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   useEffect(() => {
     if (slug) {
       loadEventData();
     }
   }, [slug]);
+
+  useEffect(() => {
+    if (lightboxIndex === -1) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeLightbox();
+      } else if (e.key === 'ArrowLeft') {
+        goToPreviousImage();
+      } else if (e.key === 'ArrowRight') {
+        goToNextImage();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxIndex, images.length]);
 
   const loadEventData = async () => {
     try {
@@ -117,11 +136,44 @@ export const EventDetail: React.FC = () => {
   };
 
   const openLightbox = (image: EventImage) => {
-    setLightboxImage(image);
+    const index = images.findIndex(img => img.id === image.id);
+    setLightboxIndex(index);
   };
 
   const closeLightbox = () => {
-    setLightboxImage(null);
+    setLightboxIndex(-1);
+  };
+
+  const goToNextImage = () => {
+    setLightboxIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const goToPreviousImage = () => {
+    setLightboxIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      goToNextImage();
+    }
+    if (isRightSwipe) {
+      goToPreviousImage();
+    }
   };
 
   if (loading) {
@@ -396,30 +448,74 @@ export const EventDetail: React.FC = () => {
       </div>
 
       {/* Lightbox Modal */}
-      {lightboxImage && (
+      {lightboxIndex >= 0 && images[lightboxIndex] && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-90 animate-fadeIn"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 animate-fadeIn"
           onClick={closeLightbox}
         >
+          {/* Close Button */}
           <button
-            className="absolute top-4 right-4 p-2 rounded-full bg-white bg-opacity-10 hover:bg-opacity-20 transition-all duration-300"
+            className="absolute top-4 right-4 p-2 rounded-full bg-white bg-opacity-10 hover:bg-opacity-20 transition-all duration-300 z-10"
             onClick={closeLightbox}
             aria-label="Close lightbox"
           >
             <X className="w-8 h-8 text-white" />
           </button>
+
+          {/* Image Counter */}
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-60 text-white px-4 py-2 rounded-full z-10">
+            <span className="text-lg font-medium">
+              {lightboxIndex + 1} / {images.length}
+            </span>
+          </div>
+
+          {/* Previous Button - Desktop Only */}
+          {images.length > 1 && (
+            <button
+              className="hidden md:flex absolute left-4 top-1/2 transform -translate-y-1/2 p-3 rounded-full bg-white bg-opacity-10 hover:bg-opacity-20 transition-all duration-300 z-10"
+              onClick={(e) => {
+                e.stopPropagation();
+                goToPreviousImage();
+              }}
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="w-8 h-8 text-white" />
+            </button>
+          )}
+
+          {/* Next Button - Desktop Only */}
+          {images.length > 1 && (
+            <button
+              className="hidden md:flex absolute right-4 top-1/2 transform -translate-y-1/2 p-3 rounded-full bg-white bg-opacity-10 hover:bg-opacity-20 transition-all duration-300 z-10"
+              onClick={(e) => {
+                e.stopPropagation();
+                goToNextImage();
+              }}
+              aria-label="Next image"
+            >
+              <ChevronRight className="w-8 h-8 text-white" />
+            </button>
+          )}
+
+          {/* Image Container with Touch Support */}
           <div
-            className="relative max-w-7xl max-h-[90vh] w-full"
+            className="relative max-w-7xl max-h-[90vh] w-full px-4 md:px-16"
             onClick={(e) => e.stopPropagation()}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
             <img
-              src={lightboxImage.original_url}
-              alt={lightboxImage.caption || event.title}
-              className="w-full h-full object-contain rounded-lg"
+              src={images[lightboxIndex].original_url}
+              alt={images[lightboxIndex].caption || event.title}
+              className="w-full h-full object-contain rounded-lg transition-opacity duration-300"
+              key={lightboxIndex}
             />
-            {lightboxImage.caption && (
+
+            {/* Caption */}
+            {images[lightboxIndex].caption && (
               <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white p-4 rounded-b-lg">
-                <p className="text-center text-lg">{lightboxImage.caption}</p>
+                <p className="text-center text-lg">{images[lightboxIndex].caption}</p>
               </div>
             )}
           </div>
