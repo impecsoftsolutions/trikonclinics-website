@@ -226,7 +226,7 @@ export const PublicEvents: React.FC = () => {
                           e.currentTarget.style.opacity = '1';
                         }}
                       >
-                        View Details
+                        {primaryCtaButton.text}
                       </button>
                     </div>
                   </div>
