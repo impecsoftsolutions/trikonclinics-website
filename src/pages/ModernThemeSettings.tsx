@@ -475,6 +475,44 @@ export const ModernThemeSettings: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                {config.callUsButton && (
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-500 font-medium mb-3">Call Us Button</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {config.callUsButton.text && (
+                        <div>
+                          <p className="text-xs text-gray-500">Text</p>
+                          <p className="text-sm text-gray-900">{config.callUsButton.text}</p>
+                        </div>
+                      )}
+                      {config.callUsButton.backgroundColor && (
+                        <div>
+                          <p className="text-xs text-gray-500">Background Color</p>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-6 h-6 rounded border border-gray-300"
+                              style={{ backgroundColor: config.callUsButton.backgroundColor }}
+                            />
+                            <p className="text-sm text-gray-900">{config.callUsButton.backgroundColor}</p>
+                          </div>
+                        </div>
+                      )}
+                      {config.callUsButton.textColor && (
+                        <div>
+                          <p className="text-xs text-gray-500">Text Color</p>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-6 h-6 rounded border border-gray-300"
+                              style={{ backgroundColor: config.callUsButton.textColor }}
+                            />
+                            <p className="text-sm text-gray-900">{config.callUsButton.textColor}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

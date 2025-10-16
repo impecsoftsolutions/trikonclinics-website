@@ -202,6 +202,13 @@ export interface PrimaryCTAButton {
   hoverBackgroundColor?: string;
 }
 
+export interface CallUsButton {
+  text?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  hoverOpacity?: number;
+}
+
 export interface ThemeConfig {
   layoutStyle?: 'modern' | 'minimal' | 'playful';
   layoutTypography?: LayoutTypography;
@@ -215,6 +222,7 @@ export interface ThemeConfig {
   typography: Typography;
   backButton?: BackButton;
   primaryCtaButton?: PrimaryCTAButton;
+  callUsButton?: CallUsButton;
 }
 
 export interface ModernTheme {

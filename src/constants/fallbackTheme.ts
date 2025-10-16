@@ -305,6 +305,12 @@ export const FALLBACK_THEME_CONFIG: ThemeConfig = {
     textColor: '#FFFFFF',
     hoverOpacity: 0.9,
   },
+  callUsButton: {
+    text: 'Call Us',
+    backgroundColor: '#10B981',
+    textColor: '#FFFFFF',
+    hoverOpacity: 0.9,
+  },
 };
 
 export const FALLBACK_THEME_NAME = 'Clinical Modern';

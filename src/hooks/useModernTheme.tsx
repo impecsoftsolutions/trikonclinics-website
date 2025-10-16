@@ -51,6 +51,12 @@ export function useModernTheme() {
       textColor: '#FFFFFF',
       hoverOpacity: 0.9,
     },
+    callUsButton: context.theme.callUsButton || {
+      text: 'Call Us',
+      backgroundColor: '#10B981',
+      textColor: '#FFFFFF',
+      hoverOpacity: 0.9,
+    },
     navigationActiveBackground: context.theme.layouts?.navigation?.activeBackground,
     decorativeIconColor: colors?.decorativeIcon || '#FBBF24',
     healthLibraryEnabled: context.healthLibraryEnabled,
