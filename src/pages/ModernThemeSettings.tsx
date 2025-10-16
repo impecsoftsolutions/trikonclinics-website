@@ -517,6 +517,75 @@ export const ModernThemeSettings: React.FC = () => {
             </div>
           )}
 
+          {config.gradients && config.gradients.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Gradients</h3>
+
+              <div className="space-y-4">
+                {config.gradients.map((gradient, index) => (
+                  <div key={index} className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-500 font-medium mb-3 capitalize">
+                      {gradient.name.replace(/([A-Z])/g, ' $1').trim()} Gradient
+                    </p>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-6">
+                        <div>
+                          <p className="text-xs text-gray-500">Type</p>
+                          <p className="text-sm text-gray-900 capitalize">{gradient.type}</p>
+                        </div>
+                        {gradient.angle !== undefined && (
+                          <div>
+                            <p className="text-xs text-gray-500">Angle</p>
+                            <p className="text-sm text-gray-900">{gradient.angle}°</p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">Colors</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {gradient.stops.map((stop, stopIndex) => (
+                            <React.Fragment key={stopIndex}>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-6 h-6 rounded border border-gray-300"
+                                  style={{ backgroundColor: stop.color }}
+                                  title={`${stop.color} at ${stop.position}%`}
+                                />
+                                <span className="text-sm text-gray-900">{stop.color}</span>
+                              </div>
+                              {stopIndex < gradient.stops.length - 1 && (
+                                <span className="text-gray-400">→</span>
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">Preview</p>
+                        <div
+                          className="h-16 rounded-lg border border-gray-300 shadow-sm"
+                          style={{
+                            background:
+                              gradient.type === 'linear'
+                                ? `linear-gradient(${gradient.angle || 0}deg, ${gradient.stops
+                                    .map((stop) => `${stop.color} ${stop.position}%`)
+                                    .join(', ')})`
+                                : `radial-gradient(circle, ${gradient.stops
+                                    .map((stop) => `${stop.color} ${stop.position}%`)
+                                    .join(', ')})`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Animations & Accessibility</h3>
 
