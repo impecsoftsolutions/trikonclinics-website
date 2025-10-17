@@ -62,6 +62,7 @@ export const PublicNav: React.FC = () => {
     { name: 'Home', path: '/' },
     { name: 'Doctors', path: '/doctors' },
     { name: 'Services', path: '/services' },
+    { name: 'Events', path: '/events' },
     { name: 'Health Library', path: '/health-library' },
     { name: 'Testimonials', path: '/testimonials' },
     { name: 'Contact', path: '/contact' },
