@@ -117,7 +117,7 @@ export const Dashboard: React.FC = () => {
     {
       title: 'Storage Used',
       value: stats.storageUsed,
-      subtitle: stats.storageBreakdown,
+      subtitle: '',
       icon: HardDrive,
       color: 'bg-slate-500',
       bgColor: 'bg-slate-50',
@@ -154,7 +154,7 @@ export const Dashboard: React.FC = () => {
             </div>
             <h3 className="text-gray-600 text-sm mb-1">{card.title}</h3>
             <p className={`${card.isStorage ? 'text-2xl' : 'text-3xl'} font-bold text-gray-800 mb-1`}>{card.value}</p>
-            <p className="text-sm text-gray-500">{card.subtitle}</p>
+            {!card.isStorage && <p className="text-sm text-gray-500">{card.subtitle}</p>}
           </div>
         ))}
       </div>
