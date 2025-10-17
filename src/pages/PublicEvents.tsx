@@ -160,7 +160,7 @@ export const PublicEvents: React.FC = () => {
                 return (
                   <div
                     key={event.id}
-                    className="rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden cursor-pointer"
+                    className="flex flex-col rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 overflow-hidden cursor-pointer"
                     style={{ backgroundColor: `hsl(var(--color-bg-surface))` }}
                     onClick={() => navigate(`/events/${event.slug}`)}
                   >
@@ -183,7 +183,7 @@ export const PublicEvents: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="p-6">
+                    <div className="p-6 flex flex-col flex-1">
                       <div className="flex items-center gap-2 mb-3">
                         <Calendar
                           className="w-4 h-4"
@@ -214,7 +214,7 @@ export const PublicEvents: React.FC = () => {
                       )}
 
                       <button
-                        className="w-full py-2 px-4 rounded-lg font-semibold transition-opacity"
+                        className="w-full py-2 px-4 rounded-lg font-semibold transition-opacity mt-auto"
                         style={{
                           backgroundColor: primaryCtaButton.backgroundColor,
                           color: primaryCtaButton.textColor,
