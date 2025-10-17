@@ -4,6 +4,7 @@ import { Calendar, Save, Image as ImageIcon, Video, Upload, X, AlertCircle, Tras
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { BackButton } from '../components/BackButton';
+import imageCompression from 'browser-image-compression';
 
 interface Event {
   id: string;
@@ -48,6 +49,25 @@ const MAX_PHOTOS = 20;
 const MAX_VIDEOS = 10;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+const compressImageIfNeeded = async (file: File): Promise<File> => {
+  if (file.size <= 500 * 1024) {
+    return file;
+  }
+
+  try {
+    const compressedFile = await imageCompression(file, {
+      maxSizeMB: 0.5,
+      useWebWorker: true,
+      maxIteration: 10,
+      fileType: 'image/jpeg',
+    });
+    return compressedFile;
+  } catch (error) {
+    console.error('Compression failed, using original:', error);
+    return file;
+  }
+};
 
 const EditEvent: React.FC = () => {
   const navigate = useNavigate();
@@ -408,8 +428,9 @@ const EditEvent: React.FC = () => {
 
       for (let i = 0; i < selectedFiles.length; i++) {
         const selectedFile = selectedFiles[i];
-        const fileToUpload = selectedFile.file;
-        const fileExt = selectedFile.file.name.split('.').pop();
+        const originalFile = selectedFile.file;
+        const fileToUpload = await compressImageIfNeeded(originalFile);
+        const fileExt = fileToUpload.name.split('.').pop();
         const fileName = `${id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
         const { data: uploadData, error: uploadError } = await supabase.storage

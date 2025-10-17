@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import imageCompression from 'browser-image-compression';
 
 export type StorageBucket = 'hospital-profile' | 'doctors' | 'testimonials' | 'services';
 
@@ -7,19 +8,43 @@ interface UploadResult {
   error: string | null;
 }
 
+const TARGET_SIZE_KB = 500;
+const COMPRESSION_OPTIONS = {
+  maxSizeMB: 0.5,
+  useWebWorker: true,
+  maxIteration: 10,
+  fileType: 'image/jpeg',
+};
+
+async function compressImageIfNeeded(file: File): Promise<File> {
+  if (file.size <= TARGET_SIZE_KB * 1024) {
+    return file;
+  }
+
+  try {
+    const compressedFile = await imageCompression(file, COMPRESSION_OPTIONS);
+    return compressedFile;
+  } catch (error) {
+    console.error('Compression failed, using original file:', error);
+    return file;
+  }
+}
+
 export async function uploadImage(
   file: File,
   bucket: StorageBucket,
   path?: string
 ): Promise<UploadResult> {
   try {
-    const fileExt = file.name.split('.').pop();
+    const compressedFile = await compressImageIfNeeded(file);
+
+    const fileExt = compressedFile.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = path ? `${path}/${fileName}` : fileName;
 
     const { error: uploadError } = await supabase.storage
       .from(bucket)
-      .upload(filePath, file, {
+      .upload(filePath, compressedFile, {
         cacheControl: '3600',
         upsert: false
       });
@@ -67,15 +92,15 @@ export async function deleteImage(url: string, bucket: StorageBucket): Promise<b
 }
 
 export function validateImageFile(file: File): { valid: boolean; error?: string } {
-  const maxSize = 5 * 1024 * 1024;
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  const maxSize = 10 * 1024 * 1024;
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
   if (file.size > maxSize) {
-    return { valid: false, error: 'File size must be less than 5MB' };
+    return { valid: false, error: 'File size must be less than 10MB' };
   }
 
   if (!allowedTypes.includes(file.type)) {
-    return { valid: false, error: 'Only JPEG, PNG, WebP, and GIF images are allowed' };
+    return { valid: false, error: 'Only JPEG, PNG, and WebP images are allowed' };
   }
 
   return { valid: true };

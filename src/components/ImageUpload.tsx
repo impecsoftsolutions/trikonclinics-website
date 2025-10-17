@@ -114,14 +114,14 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept="image/jpeg,image/png,image/webp"
             onChange={handleFileSelect}
             className="hidden"
           />
 
           <div className="text-xs text-gray-500 space-y-1">
-            <p>Supported formats: JPEG, PNG, WebP, GIF</p>
-            <p>Maximum file size: 5MB</p>
+            <p>Supported formats: JPEG, PNG, WebP</p>
+            <p>Maximum file size: 10MB (auto-compressed)</p>
           </div>
 
           {preview && !uploading && (
