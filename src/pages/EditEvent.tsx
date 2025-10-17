@@ -11,6 +11,7 @@ interface Event {
   slug: string;
   event_date: string;
   short_description: string | null;
+  full_description: string | null;
   status: 'draft' | 'published';
   created_at: string;
 }
@@ -83,7 +84,8 @@ const EditEvent: React.FC = () => {
   const [formData, setFormData] = useState({
     title: '',
     event_date: '',
-    short_description: ''
+    short_description: '',
+    full_description: ''
   });
 
   useEffect(() => {
@@ -121,7 +123,8 @@ const EditEvent: React.FC = () => {
       setFormData({
         title: data.title,
         event_date: data.event_date,
-        short_description: data.short_description || ''
+        short_description: data.short_description || '',
+        full_description: data.full_description || ''
       });
     } catch (err) {
       console.error('Error fetching event:', err);
@@ -617,6 +620,7 @@ const EditEvent: React.FC = () => {
           title: formData.title.trim(),
           event_date: formData.event_date,
           short_description: formData.short_description.trim() || null,
+          full_description: formData.full_description.trim() || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', id);
@@ -730,6 +734,21 @@ const EditEvent: React.FC = () => {
             placeholder="Brief description of the event"
             rows={3}
             maxLength={200}
+            disabled={saving}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="full_description" className="block text-sm font-medium text-gray-700 mb-2">
+            Full Description
+          </label>
+          <textarea
+            id="full_description"
+            value={formData.full_description}
+            onChange={(e) => setFormData({ ...formData, full_description: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+            placeholder="Detailed description of the event"
+            rows={10}
             disabled={saving}
           />
         </div>

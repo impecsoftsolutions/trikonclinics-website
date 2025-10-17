@@ -14,7 +14,8 @@ const ManageEvents: React.FC = () => {
 
   const [formData, setFormData] = useState({
     title: '',
-    event_date: ''
+    event_date: '',
+    full_description: ''
   });
 
   const generateSlug = (title: string): string => {
@@ -72,6 +73,7 @@ const ManageEvents: React.FC = () => {
           title: formData.title.trim(),
           slug: slug,
           event_date: formData.event_date,
+          full_description: formData.full_description.trim() || null,
           status: 'draft',
           created_by: user?.id || null
         })
@@ -147,6 +149,21 @@ const ManageEvents: React.FC = () => {
               disabled={loading}
             />
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="full_description" className="block text-sm font-medium text-gray-700 mb-2">
+            Full Description
+          </label>
+          <textarea
+            id="full_description"
+            value={formData.full_description}
+            onChange={(e) => setFormData({ ...formData, full_description: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
+            placeholder="Detailed description of the event (optional)"
+            rows={8}
+            disabled={loading}
+          />
         </div>
 
         <div className="flex justify-end pt-4">
