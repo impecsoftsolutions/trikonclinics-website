@@ -8,8 +8,10 @@ import {
   Activity,
   TrendingUp,
   Clock,
+  HardDrive,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { getStorageStats, formatStorageSize } from '../utils/storageStats';
 
 interface Stats {
   totalDoctors: number;
@@ -19,6 +21,9 @@ interface Stats {
   totalServices: number;
   activeServices: number;
   recentActivities: number;
+  storageUsed: string;
+  storageBytes: number;
+  storageBreakdown: string;
 }
 
 export const Dashboard: React.FC = () => {
@@ -31,6 +36,9 @@ export const Dashboard: React.FC = () => {
     totalServices: 0,
     activeServices: 0,
     recentActivities: 0,
+    storageUsed: '0 MB',
+    storageBytes: 0,
+    storageBreakdown: '0 files',
   });
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +48,7 @@ export const Dashboard: React.FC = () => {
 
   const loadStats = async () => {
     try {
-      const [doctors, testimonials, services, activities] = await Promise.all([
+      const [doctors, testimonials, services, activities, storageData] = await Promise.all([
         supabase.from('doctors').select('is_enabled', { count: 'exact' }),
         supabase.from('testimonials').select('is_published', { count: 'exact' }),
         supabase.from('services').select('is_enabled', { count: 'exact' }),
@@ -48,7 +56,11 @@ export const Dashboard: React.FC = () => {
           .from('activity_logs')
           .select('*', { count: 'exact' })
           .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        getStorageStats(),
       ]);
+
+      const totalFiles = storageData.buckets.reduce((sum, b) => sum + b.fileCount, 0);
+      const storageBreakdown = `${totalFiles} files across ${storageData.buckets.length} buckets`;
 
       setStats({
         totalDoctors: doctors.count || 0,
@@ -58,6 +70,9 @@ export const Dashboard: React.FC = () => {
         totalServices: services.count || 0,
         activeServices: services.data?.filter((s) => s.is_enabled).length || 0,
         recentActivities: activities.count || 0,
+        storageUsed: formatStorageSize(storageData.totalBytes),
+        storageBytes: storageData.totalBytes,
+        storageBreakdown,
       });
     } catch (error) {
       console.error('Error loading stats:', error);
@@ -88,8 +103,8 @@ export const Dashboard: React.FC = () => {
       value: stats.totalServices,
       subtitle: `${stats.activeServices} active`,
       icon: Briefcase,
-      color: 'bg-purple-500',
-      bgColor: 'bg-purple-50',
+      color: 'bg-teal-500',
+      bgColor: 'bg-teal-50',
     },
     {
       title: 'Recent Activity',
@@ -98,6 +113,15 @@ export const Dashboard: React.FC = () => {
       icon: Activity,
       color: 'bg-orange-500',
       bgColor: 'bg-orange-50',
+    },
+    {
+      title: 'Storage Used',
+      value: stats.storageUsed,
+      subtitle: stats.storageBreakdown,
+      icon: HardDrive,
+      color: 'bg-slate-500',
+      bgColor: 'bg-slate-50',
+      isStorage: true,
     },
   ];
 
@@ -119,17 +143,17 @@ export const Dashboard: React.FC = () => {
         <p className="text-gray-600">Welcome to Trikon Clinics Admin Panel</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
         {statCards.map((card) => (
           <div key={card.title} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-start justify-between mb-4">
               <div className={`${card.bgColor} p-3 rounded-lg`}>
                 <card.icon className={`w-6 h-6 ${card.color.replace('bg-', 'text-')}`} />
               </div>
-              <TrendingUp className="w-5 h-5 text-green-500" />
+              {!card.isStorage && <TrendingUp className="w-5 h-5 text-green-500" />}
             </div>
             <h3 className="text-gray-600 text-sm mb-1">{card.title}</h3>
-            <p className="text-3xl font-bold text-gray-800 mb-1">{card.value}</p>
+            <p className={`${card.isStorage ? 'text-2xl' : 'text-3xl'} font-bold text-gray-800 mb-1`}>{card.value}</p>
             <p className="text-sm text-gray-500">{card.subtitle}</p>
           </div>
         ))}
