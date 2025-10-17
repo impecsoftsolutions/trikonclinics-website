@@ -45,34 +45,32 @@ function detectColorChanges(
 ): void {
   const colorChanges: string[] = [];
 
-  ['light', 'dark'].forEach((mode) => {
-    const modeKey = mode as 'light' | 'dark';
-    const origColors = original.colors[modeKey];
-    const newColors = updated.colors[modeKey];
+  // Light mode only - no dark mode support
+  const origColors = original.colors;
+  const newColors = updated.colors;
 
-    if (origColors.primary !== newColors.primary) {
-      colorChanges.push(`${mode} primary color`);
-    }
-    if (origColors.secondary !== newColors.secondary) {
-      colorChanges.push(`${mode} secondary color`);
-    }
-    if (origColors.accent !== newColors.accent) {
-      colorChanges.push(`${mode} accent color`);
-    }
+  if (origColors.primary !== newColors.primary) {
+    colorChanges.push('primary color');
+  }
+  if (origColors.secondary !== newColors.secondary) {
+    colorChanges.push('secondary color');
+  }
+  if (origColors.accent !== newColors.accent) {
+    colorChanges.push('accent color');
+  }
 
-    if (JSON.stringify(origColors.background) !== JSON.stringify(newColors.background)) {
-      colorChanges.push(`${mode} background colors`);
-    }
-    if (JSON.stringify(origColors.text) !== JSON.stringify(newColors.text)) {
-      colorChanges.push(`${mode} text colors`);
-    }
-    if (JSON.stringify(origColors.semantic) !== JSON.stringify(newColors.semantic)) {
-      colorChanges.push(`${mode} semantic colors`);
-    }
-    if (JSON.stringify(origColors.border) !== JSON.stringify(newColors.border)) {
-      colorChanges.push(`${mode} border colors`);
-    }
-  });
+  if (JSON.stringify(origColors.background) !== JSON.stringify(newColors.background)) {
+    colorChanges.push('background colors');
+  }
+  if (JSON.stringify(origColors.text) !== JSON.stringify(newColors.text)) {
+    colorChanges.push('text colors');
+  }
+  if (JSON.stringify(origColors.semantic) !== JSON.stringify(newColors.semantic)) {
+    colorChanges.push('semantic colors');
+  }
+  if (JSON.stringify(origColors.border) !== JSON.stringify(newColors.border)) {
+    colorChanges.push('border colors');
+  }
 
   if (colorChanges.length > 0) {
     changes.push({

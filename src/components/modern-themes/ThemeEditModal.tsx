@@ -786,20 +786,7 @@ const LayoutsTab: React.FC<TabProps> = ({ config, updateConfig }) => (
             </div>
           )}
         </div>
-        <div>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              checked={config.layouts.navigation.enableThemeModeToggle !== false}
-              onChange={(e) => updateConfig(['layouts', 'navigation', 'enableThemeModeToggle'], e.target.checked)}
-              className="rounded border-gray-300"
-            />
-            Enable Light/Dark Mode Toggle
-          </label>
-          <p className="text-xs text-gray-600 mt-1 ml-6">
-            Show the light/dark mode switcher icon in the navigation bar
-          </p>
-        </div>
+        {/* Dark mode toggle removed - not implemented in this system */}
       </div>
     </section>
 

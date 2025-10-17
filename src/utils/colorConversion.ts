@@ -62,37 +62,33 @@ export function convertColorPalette(colors: any): Record<string, string> {
     if (colors.secondary) converted.secondary = hexToHSL(colors.secondary);
     if (colors.accent) converted.accent = hexToHSL(colors.accent);
 
-    // TEMPORARY: Remove this backward compatibility after database migration
     // Handle background colors (supports both flat string and nested object)
     if (colors.background) {
       if (typeof colors.background === 'string') {
-        // Flat format (deprecated): colors.background = "#FFFACD"
-        console.warn('[Theme System] Theme using deprecated flat color format for background. Migrate to nested structure.');
+        // Flat format: colors.background = "#FFFACD"
         const bgColor = hexToHSL(colors.background);
         converted['bg-page'] = bgColor;
         converted['bg-surface'] = bgColor;
         converted['bg-elevated'] = bgColor;
       } else if (typeof colors.background === 'object') {
-        // Nested format (current): colors.background = { page: "#FFFACD", surface: "#F9FAFB", elevated: "#FFFFFF" }
+        // Nested format: colors.background = { page: "#FFFACD", surface: "#F9FAFB", elevated: "#FFFFFF" }
         converted['bg-page'] = hexToHSL(colors.background.page);
         converted['bg-surface'] = hexToHSL(colors.background.surface);
         converted['bg-elevated'] = hexToHSL(colors.background.elevated);
       }
     }
 
-    // TEMPORARY: Remove this backward compatibility after database migration
     // Handle text colors (supports both flat string and nested object)
     if (colors.text) {
       if (typeof colors.text === 'string') {
-        // Flat format (deprecated): colors.text = "#1F2937"
-        console.warn('[Theme System] Theme using deprecated flat color format for text. Migrate to nested structure.');
+        // Flat format: colors.text = "#1F2937"
         const textColor = hexToHSL(colors.text);
         converted['text-primary'] = textColor;
         converted['text-secondary'] = textColor;
         converted['text-muted'] = textColor;
         converted['text-inverse'] = hexToHSL('#FFFFFF'); // Use white as inverse for flat format
       } else if (typeof colors.text === 'object') {
-        // Nested format (current): colors.text = { primary: "#1F2937", secondary: "#6B7280", ... }
+        // Nested format: colors.text = { primary: "#1F2937", secondary: "#6B7280", ... }
         converted['text-primary'] = hexToHSL(colors.text.primary);
         converted['text-secondary'] = hexToHSL(colors.text.secondary);
         converted['text-muted'] = hexToHSL(colors.text.muted);
@@ -100,19 +96,17 @@ export function convertColorPalette(colors: any): Record<string, string> {
       }
     }
 
-    // TEMPORARY: Remove this backward compatibility after database migration
     // Handle semantic colors (supports both flat string and nested object)
     if (colors.semantic) {
       if (typeof colors.semantic === 'string') {
-        // Flat format not expected for semantic, but handle it anyway
-        console.warn('[Theme System] Theme using deprecated flat color format for semantic. Migrate to nested structure.');
+        // Flat format fallback
         const semanticColor = hexToHSL(colors.semantic);
         converted['semantic-success'] = semanticColor;
         converted['semantic-warning'] = semanticColor;
         converted['semantic-error'] = semanticColor;
         converted['semantic-info'] = semanticColor;
       } else if (typeof colors.semantic === 'object') {
-        // Nested format (current): colors.semantic = { success: "#10B981", warning: "#F59E0B", ... }
+        // Nested format: colors.semantic = { success: "#10B981", warning: "#F59E0B", ... }
         converted['semantic-success'] = hexToHSL(colors.semantic.success);
         converted['semantic-warning'] = hexToHSL(colors.semantic.warning);
         converted['semantic-error'] = hexToHSL(colors.semantic.error);
@@ -120,18 +114,16 @@ export function convertColorPalette(colors: any): Record<string, string> {
       }
     }
 
-    // TEMPORARY: Remove this backward compatibility after database migration
     // Handle border colors (supports both flat string and nested object)
     if (colors.border) {
       if (typeof colors.border === 'string') {
-        // Flat format (deprecated): colors.border = "#E5E7EB"
-        console.warn('[Theme System] Theme using deprecated flat color format for border. Migrate to nested structure.');
+        // Flat format: colors.border = "#E5E7EB"
         const borderColor = hexToHSL(colors.border);
         converted['border-default'] = borderColor;
         converted['border-hover'] = borderColor;
         converted['border-focus'] = borderColor;
       } else if (typeof colors.border === 'object') {
-        // Nested format (current): colors.border = { default: "#E5E7EB", hover: "#D1D5DB", focus: "#0066CC" }
+        // Nested format: colors.border = { default: "#E5E7EB", hover: "#D1D5DB", focus: "#0066CC" }
         converted['border-default'] = hexToHSL(colors.border.default);
         converted['border-hover'] = hexToHSL(colors.border.hover);
         converted['border-focus'] = hexToHSL(colors.border.focus);

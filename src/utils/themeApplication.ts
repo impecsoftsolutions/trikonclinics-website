@@ -77,7 +77,7 @@ export function applyThemeToDocument(config: ThemeConfig): void {
       root.style.setProperty('--element-gap', config.layoutSpacing.elementGap);
     }
 
-    console.log('[Theme System] Applied theme to document in light mode');
+    console.log('[Theme System] Applied theme to document');
   } catch (error) {
     console.error('[Theme System] Error applying theme to document:', error);
   }
